@@ -46,7 +46,9 @@ class Wizard_TeamA(Character):
         
         level_up_stats = ["hp", "speed", "ranged damage", "ranged cooldown", "projectile range"]
         if self.can_level_up():
-            choice = randint(0, len(level_up_stats) - 1)
+            choice = 3
+            if self.xp_to_next_level % 3 == 0:
+                choice = 1 
             self.level_up(level_up_stats[choice])      
 
 
