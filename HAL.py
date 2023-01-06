@@ -16,9 +16,9 @@ from Orc import *
 from Tower import *
 from Base import *
 
-from Knight_TeamA import *
-from Archer_TeamA import *
-from Wizard_TeamA import *
+from Knight_BingChiling import *
+from Archer_BingChiling import *
+from Wizard_BingChiling import *
 
 from Knight_TeamB import *
 from Archer_TeamB import *
