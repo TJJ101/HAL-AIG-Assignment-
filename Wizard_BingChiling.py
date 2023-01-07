@@ -47,8 +47,10 @@ class Wizard_TeamA(Character):
         level_up_stats = ["hp", "speed", "ranged damage", "ranged cooldown", "projectile range"]
         if self.can_level_up():
             choice = 3
-            if self.xp_to_next_level % 3 == 0:
-                choice = 1 
+            if self.xp_to_next_level % 300 == 0:
+                choice = 1
+            elif self.xp_to_next_level % 400 == 0:
+                choice = 0
             self.level_up(level_up_stats[choice])      
 
 
@@ -123,13 +125,32 @@ class WizardStateAttacking_TeamA(State):
             self.wizard.velocity = Vector2(0, 0)
             if self.wizard.current_ranged_cooldown <= 0:
                 self.wizard.ranged_attack(self.wizard.target.position, self.wizard.explosion_image)
-
         else:
             self.wizard.velocity = self.wizard.target.position - self.wizard.position
             if self.wizard.velocity.length() > 0:
                 self.wizard.velocity.normalize_ip();
                 self.wizard.velocity *= self.wizard.maxSpeed
 
+        nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
+
+        #Wizard starts to move back when melee enemy is 70pixel or less away
+        # if opponent_distance <= 70:
+        #     if nearest_opponent.name == "knight" or nearest_opponent.name == "orc":
+        #         print("enemy near wizard")
+        #         nearest_node = self.wizard.path_graph.get_nearest_node(self.wizard.position)
+        #         if (self.wizard.position - nearest_node.position).length() <= 96:
+        #             prev_node = find_previous_node(self.wizard, nearest_node)
+        #             print(prev_node.id)
+        #             if prev_node is not None:
+        #                 self.wizard.velocity = self.wizard.position - prev_node.position
+        #             else:
+        #                 self.wizard.velocity = self.wizard.position - self.wizard.base.position
+        #         else:
+        #             self.wizard.velocity = self.wizard.position - nearest_node.position
+        #         self.wizard.velocity.normalize_ip()
+        #         self.wizard.velocity *= self.wizard.maxSpeed
+        #         if self.wizard.current_ranged_cooldown <= 0:
+        #             self.wizard.ranged_attack(self.wizard.target.position, self.wizard.explosion_image)
 
     def check_conditions(self):
 
@@ -137,7 +158,25 @@ class WizardStateAttacking_TeamA(State):
         if self.wizard.world.get(self.wizard.target.id) is None or self.wizard.target.ko:
             self.wizard.target = None
             return "seeking"
+
+        #changes target if there is one closer
+        nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
+        if nearest_opponent is not None:
+            if nearest_opponent == self.wizard.target:
+                pass
             
+            elif self.wizard.target.name == "archer" or "wizard":
+                pass
+
+            else:
+                dist_self_target = (self.wizard.position - self.wizard.target.position).length()
+                dist_self_nearest_opponent = (self.wizard.position - nearest_opponent.position).length()
+                if dist_self_nearest_opponent < dist_self_target:
+                    self.wizard.target = nearest_opponent
+                    print("opponent changed!")
+
+        
+
         return None
 
     def entry_actions(self):
@@ -176,3 +215,11 @@ class WizardStateKO_TeamA(State):
         self.wizard.target = None
 
         return None
+
+# def find_previous_node(wizard, node):
+#     print("ALAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+#     for con in wizard.path_graph.connections:
+#         if con.toNode.id == node.id:
+#             return con.fromNode
+        
+#     return None
