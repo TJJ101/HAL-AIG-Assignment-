@@ -1,6 +1,6 @@
 import pygame
 
-from random import randint, random, choice
+from random import randint, random
 from Graph import *
 
 from Character import *
@@ -20,6 +20,7 @@ class Wizard_TeamA(Character):
         self.move_target = GameEntity(world, "wizard_move_target", None)
         self.target = None
 
+        self.levelCount = 0
         self.maxSpeed = 50
         self.min_target_distance = 100
         self.projectile_range = 100
@@ -44,14 +45,14 @@ class Wizard_TeamA(Character):
         
         Character.process(self, time_passed)
         
-        level_up_stats = ["hp", "speed", "ranged damage", "ranged cooldown", "projectile range"]
+        #level_up_stats = ["hp", "speed", "ranged damage", "ranged cooldown", "projectile range"]
+        level_up_stats = ["ranged damage", "ranged cooldown", "ranged cooldown", "speed"]
         if self.can_level_up():
-            choice = 3
-            if self.xp_to_next_level % 300 == 0:
-                choice = 2
-            elif self.xp_to_next_level % 400 == 0:
-                choice = 0
-            self.level_up(level_up_stats[choice])      
+            self.level_up(level_up_stats[self.levelCount])   
+            if self.levelCount == 3:
+                self.levelCount = 0
+            else: 
+                self.levelCount += 1 
 
 
 class WizardStateSeeking_TeamA(State):
@@ -61,9 +62,7 @@ class WizardStateSeeking_TeamA(State):
         State.__init__(self, "seeking")
         self.wizard = wizard
 
-        #self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
-        #set fixed path for testing
-        self.wizard.path_graph = self.wizard.world.paths[0]
+        self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
         
 
     def do_actions(self):
@@ -197,8 +196,6 @@ class WizardStateKO_TeamA(State):
         if self.wizard.current_respawn_time <= 0:
             self.wizard.current_respawn_time = self.wizard.respawn_time
             self.wizard.ko = False
-            #self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
-            #set fix path for testing
             self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
             return "seeking"
             
