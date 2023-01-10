@@ -62,7 +62,8 @@ class WizardStateSeeking_TeamA(State):
         State.__init__(self, "seeking")
         self.wizard = wizard
 
-        self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
+        #self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
+        self.wizard.path_graph = self.wizard.world.paths[0]
         
 
     def do_actions(self):
@@ -134,13 +135,29 @@ class WizardStateAttacking_TeamA(State):
 
         nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
 
+        #Need to fix bug when near edge of screen 
         #Wizard starts to move back when melee enemy is 90pixel or less away
         if (self.wizard.position - nearest_opponent.position).length() <= 90:
-            if (self.wizard.position - Vector2(self.wizard.base.spawn_position)).length() <= 8:
+            if (self.wizard.position - Vector2(self.wizard.base.spawn_position)).length() <= 500:
                 pass
 
             print("enemy near wizard")
             self.wizard.velocity = Vector2(nearest_opponent.position - self.wizard.position).rotate(180)
+            print("this is the rect " + str(self.wizard.rect.x) + ", " + str(self.wizard.rect.y))
+            if(self.wizard.rect.x <= 150 or self.wizard.rect.x >= SCREEN_WIDTH - 150 or self.wizard.rect.y <= 20 or self.wizard.rect.y >= SCREEN_HEIGHT - 50):
+                print("condition triggered")
+                for obs in self.wizard.world.obstacles:
+                    if (pygame.sprite.collide_rect(self.wizard, obs)):
+                        nearest_node = self.wizard.path_graph.get_nearest_node(self.wizard.position)
+                        self.wizard.velocity = self.wizard.position - Vector2(nearest_node.position)
+                if (self.wizard.rect.x > SCREEN_WIDTH - 150 and self.wizard.rect.y < 50):
+                    print("move left")
+                    self.wizard.velocity = Vector2(-1,0)
+                elif (self.wizard.rect.x < 150 and self.wizard.rect.y < SCREEN_HEIGHT - 250) or (self.wizard.rect.x > SCREEN_WIDTH - 200):
+                    print("move up")
+                    self.wizard.velocity = Vector2(0,-1)
+
+
             self.wizard.velocity.normalize_ip()
             self.wizard.velocity *= self.wizard.maxSpeed
             if self.wizard.current_ranged_cooldown <= 0:
@@ -177,6 +194,12 @@ class WizardStateAttacking_TeamA(State):
 
         return None
 
+def get_previous_node(graph, currentNode):
+    for con in graph.connections:
+        if con.toNode == currentNode:
+            return con.fromNode
+    
+    return None
 
 class WizardStateKO_TeamA(State):
 
