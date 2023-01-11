@@ -6,7 +6,7 @@ from Graph import *
 from Character import *
 from State import *
 
-class Knight_TeamA(Character):
+class Knight_BingChiling(Character):
 
     def __init__(self, world, image, base, position):
 
@@ -22,9 +22,9 @@ class Knight_TeamA(Character):
         self.melee_damage = 20
         self.melee_cooldown = 2.
 
-        seeking_state = KnightStateSeeking_TeamA(self)
-        attacking_state = KnightStateAttacking_TeamA(self)
-        ko_state = KnightStateKO_TeamA(self)
+        seeking_state = KnightStateSeeking_BingChiling(self)
+        attacking_state = KnightStateAttacking_BingChiling(self)
+        ko_state = KnightStateKO_BingChiling(self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
@@ -45,19 +45,19 @@ class Knight_TeamA(Character):
         level_up_stats = ["hp", "speed", "melee damage", "melee cooldown"]
         if self.can_level_up():
             choice = randint(0, len(level_up_stats) - 1)
-            self.level_up(level_up_stats[choice])
+            self.level_up("hp")
 
    
 
 
-class KnightStateSeeking_TeamA(State):
+class KnightStateSeeking_BingChiling(State):
 
     def __init__(self, knight):
 
         State.__init__(self, "seeking")
         self.knight = knight
 
-        self.knight.path_graph = self.knight.world.paths[randint(0, len(self.knight.world.paths)-1)]
+        self.knight.path_graph = self.knight.world.paths[2]
 
 
     def do_actions(self):
@@ -69,14 +69,35 @@ class KnightStateSeeking_TeamA(State):
 
 
     def check_conditions(self):
-
+        self.knight.heal()
         # check if opponent is in range
         nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
+       
+       #if self.knight.world.get_nearest_opponent(self.knight).name == "archer" or self.knight.world.get_nearest_opponent(self.knight).name == "wizard":
+           
+       
         if nearest_opponent is not None:
-            opponent_distance = (self.knight.position - nearest_opponent.position).length()
-            if opponent_distance <= self.knight.min_target_distance:
-                    self.knight.target = nearest_opponent
-                    return "attacking"
+            print(self.knight.xp)
+            nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
+            
+            if nearest_opponent is not None:
+                
+                opponent_distance = (self.knight.position - nearest_opponent.position).length()
+                if opponent_distance <= self.knight.min_target_distance:
+                    
+                     self.knight.target = nearest_opponent
+                     return "attacking"
+            #if nearest_opponent.name in ["archer", "wizard", "tower", "base", "orc"]:
+                #opponent_distance = (self.knight.position - nearest_opponent.position).length()
+                #if opponent_distance <= self.knight.min_target_distance:
+                    
+                    #self.knight.target = nearest_opponent
+                    #return "attacking"
+            
+  
+
+            
+            
         
         if (self.knight.position - self.knight.move_target.position).length() < 8:
 
@@ -107,7 +128,7 @@ class KnightStateSeeking_TeamA(State):
             self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.target_node_index].position
 
 
-class KnightStateAttacking_TeamA(State):
+class KnightStateAttacking_BingChiling(State):
 
     def __init__(self, knight):
 
@@ -117,9 +138,12 @@ class KnightStateAttacking_TeamA(State):
     def do_actions(self):
 
         # colliding with target
+        print(self.knight.xp)
         if pygame.sprite.collide_rect(self.knight, self.knight.target):
             self.knight.velocity = Vector2(0, 0)
             self.knight.melee_attack(self.knight.target)
+
+            
 
         else:
             self.knight.velocity = self.knight.target.position - self.knight.position
@@ -134,6 +158,8 @@ class KnightStateAttacking_TeamA(State):
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
             self.knight.target = None
             return "seeking"
+        if self.knight.current_hp <= 200:
+            self.knight.heal()
             
         return None
 
@@ -142,7 +168,7 @@ class KnightStateAttacking_TeamA(State):
         return None
 
 
-class KnightStateKO_TeamA(State):
+class KnightStateKO_BingChiling(State):
 
     def __init__(self, knight):
 
