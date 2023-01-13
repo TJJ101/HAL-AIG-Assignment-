@@ -44,8 +44,8 @@ class Knight_BingChiling(Character):
 
         level_up_stats = ["hp", "speed", "melee damage", "melee cooldown"]
         if self.can_level_up():
-            choice = randint(0, len(level_up_stats) - 1)
             self.level_up("hp")
+            
 
    
 
@@ -57,15 +57,29 @@ class KnightStateSeeking_BingChiling(State):
         State.__init__(self, "seeking")
         self.knight = knight
 
-        self.knight.path_graph = self.knight.world.paths[2]
+        self.knight.path_graph = self.knight.world.paths[0]
 
 
     def do_actions(self):
-
-        self.knight.velocity = self.knight.move_target.position - self.knight.position
-        if self.knight.velocity.length() > 0:
-            self.knight.velocity.normalize_ip();
-            self.knight.velocity *= self.knight.maxSpeed
+        #self.knight.position 
+        nearest_node = self.knight.path_graph.get_nearest_node(self.knight.position)
+        #if self.knight.target is not None and self.knight.position[0] < 200 and self.knight.position[1] < 150:
+        #gotta figure out how to not crash
+        #stick to the wizard
+        if self.knight.target is not None:
+            if self.knight.target.name == "wizard":
+                print((self.knight.position))
+                self.knight.velocity = self.knight.target.position - self.knight.position + Vector2(35,0)
+                if self.knight.velocity.length() > 0:
+                    self.knight.velocity.normalize_ip();
+                    self.knight.velocity *= self.knight.maxSpeed
+        else:
+            #Vector2(nearest_node.position)
+            #self.knight.velocity = self.knight.move_target.position - self.knight.position
+            self.knight.velocity = Vector2(nearest_node.position) - self.knight.position
+            if self.knight.velocity.length() > 0:
+                self.knight.velocity.normalize_ip();
+                self.knight.velocity *= self.knight.maxSpeed
 
 
     def check_conditions(self):
@@ -77,16 +91,17 @@ class KnightStateSeeking_BingChiling(State):
            
        
         if nearest_opponent is not None:
-            print(self.knight.xp)
-            nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
             
-            if nearest_opponent is not None:
-                
-                opponent_distance = (self.knight.position - nearest_opponent.position).length()
-                if opponent_distance <= self.knight.min_target_distance:
-                    
-                     self.knight.target = nearest_opponent
-                     return "attacking"
+            nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
+            opponent_distance = (self.knight.position - nearest_opponent.position).length()
+            if opponent_distance <= self.knight.min_target_distance:
+                self.knight.target = nearest_opponent
+                return "attacking"
+            else:
+                test = self.knight.world.get_entity("wizard")
+                if test.team_id == self.knight.team_id:
+                    self.knight.target = test
+                    print(self.knight.target.name)
             #if nearest_opponent.name in ["archer", "wizard", "tower", "base", "orc"]:
                 #opponent_distance = (self.knight.position - nearest_opponent.position).length()
                 #if opponent_distance <= self.knight.min_target_distance:
@@ -138,7 +153,6 @@ class KnightStateAttacking_BingChiling(State):
     def do_actions(self):
 
         # colliding with target
-        print(self.knight.xp)
         if pygame.sprite.collide_rect(self.knight, self.knight.target):
             self.knight.velocity = Vector2(0, 0)
             self.knight.melee_attack(self.knight.target)
