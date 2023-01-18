@@ -44,7 +44,7 @@ class Knight_BingChiling(Character):
 
         level_up_stats = ["hp", "speed", "melee damage", "melee cooldown"]
         if self.can_level_up():
-            self.level_up("hp")
+            self.level_up("healing")
             
 
    
@@ -68,8 +68,10 @@ class KnightStateSeeking_BingChiling(State):
         #stick to the wizard
         if self.knight.target is not None:
             if self.knight.target.name == "wizard":
-                print((self.knight.position))
-                self.knight.velocity = self.knight.target.position - self.knight.position + Vector2(35,0)
+                if self.knight.position[0] > 969:
+                    self.knight.velocity = self.knight.target.position - self.knight.position + Vector2(0,45)
+                else:
+                    self.knight.velocity = self.knight.target.position - self.knight.position + Vector2(45,0)
                 if self.knight.velocity.length() > 0:
                     self.knight.velocity.normalize_ip();
                     self.knight.velocity *= self.knight.maxSpeed
@@ -101,7 +103,6 @@ class KnightStateSeeking_BingChiling(State):
                 test = self.knight.world.get_entity("wizard")
                 if test.team_id == self.knight.team_id:
                     self.knight.target = test
-                    print(self.knight.target.name)
             #if nearest_opponent.name in ["archer", "wizard", "tower", "base", "orc"]:
                 #opponent_distance = (self.knight.position - nearest_opponent.position).length()
                 #if opponent_distance <= self.knight.min_target_distance:
