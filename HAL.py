@@ -318,7 +318,7 @@ def run():
     blue_tower_2.brain.set_state("tower_state")
     world.add_entity(blue_tower_2)
 
-    blue_knight = Knight_TeamA(world, blue_knight_image, blue_base, Vector2(blue_base.spawn_position))
+    blue_knight = Knight_BingChiling(world, blue_knight_image, blue_base, Vector2(blue_base.spawn_position))
     blue_knight.team_id = 0
     blue_knight.max_hp = KNIGHT_MAX_HP
     blue_knight.maxSpeed = KNIGHT_MAX_SPEED

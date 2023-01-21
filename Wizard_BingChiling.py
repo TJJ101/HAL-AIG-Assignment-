@@ -26,13 +26,18 @@ class Wizard_TeamA(Character):
         self.projectile_range = 100
         self.projectile_speed = 100
 
+        self.dodge = False
+
         seeking_state = WizardStateSeeking_TeamA(self)
         attacking_state = WizardStateAttacking_TeamA(self)
         ko_state = WizardStateKO_TeamA(self)
+        dodge_state = WizardStateDodge_TeamA(self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
         self.brain.add_state(ko_state)
+        self.brain.add_state(dodge_state)
+        
 
         self.brain.set_state("seeking")
 
@@ -121,62 +126,33 @@ class WizardStateAttacking_TeamA(State):
     def do_actions(self):
 
         opponent_distance = (self.wizard.position - self.wizard.target.position).length()
+        #nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
 
         # opponent within range
         if opponent_distance <= self.wizard.min_target_distance:
             self.wizard.velocity = Vector2(0, 0)
             if self.wizard.current_ranged_cooldown <= 0:
                 self.wizard.ranged_attack(self.wizard.target.position, self.wizard.explosion_image)
+            self.wizard.brain.set_state("dodge")
         else:
             self.wizard.velocity = self.wizard.target.position - self.wizard.position
             if self.wizard.velocity.length() > 0:
                 self.wizard.velocity.normalize_ip();
                 self.wizard.velocity *= self.wizard.maxSpeed
 
-        nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
-
-        #Need to fix bug when near edge of screen 
-        #Wizard starts to move back when melee enemy is 90pixel or less away
-        if (self.wizard.position - nearest_opponent.position).length() <= 90:
-            if (self.wizard.position - Vector2(self.wizard.base.spawn_position)).length() <= 500:
-                pass
-
-            print("enemy near wizard")
-            self.wizard.velocity = Vector2(nearest_opponent.position - self.wizard.position).rotate(180)
-            print("this is the rect " + str(self.wizard.rect.x) + ", " + str(self.wizard.rect.y))
-            if(self.wizard.rect.x <= 150 or self.wizard.rect.x >= SCREEN_WIDTH - 150 or self.wizard.rect.y <= 20 or self.wizard.rect.y >= SCREEN_HEIGHT - 50):
-                print("condition triggered")
-                for obs in self.wizard.world.obstacles:
-                    if (pygame.sprite.collide_rect(self.wizard, obs)):
-                        nearest_node = self.wizard.path_graph.get_nearest_node(self.wizard.position)
-                        self.wizard.velocity = self.wizard.position - Vector2(nearest_node.position)
-                if (self.wizard.rect.x > SCREEN_WIDTH - 150 and self.wizard.rect.y < 50):
-                    print("move left")
-                    self.wizard.velocity = Vector2(-1,0)
-                elif (self.wizard.rect.x < 150 and self.wizard.rect.y < SCREEN_HEIGHT - 250) or (self.wizard.rect.x > SCREEN_WIDTH - 200):
-                    print("move up")
-                    self.wizard.velocity = Vector2(0,-1)
-
-
-            self.wizard.velocity.normalize_ip()
-            self.wizard.velocity *= self.wizard.maxSpeed
-            if self.wizard.current_ranged_cooldown <= 0:
-                self.wizard.ranged_attack(self.wizard.target.position, self.wizard.explosion_image)
 
     def check_conditions(self):
 
         # target is gone
         if self.wizard.world.get(self.wizard.target.id) is None or self.wizard.target.ko:
             self.wizard.target = None
+            self.wizard.dodge = False
             return "seeking"
 
         #changes target if there is one closer
         nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
         if nearest_opponent is not None:
             if nearest_opponent == self.wizard.target:
-                pass
-            
-            elif self.wizard.target.name == "archer" or "wizard":
                 pass
 
             else:
@@ -191,7 +167,10 @@ class WizardStateAttacking_TeamA(State):
         return None
 
     def entry_actions(self):
-
+        if self.wizard.world.get(self.wizard.target.id) is None or self.wizard.target.ko:
+            self.wizard.target = None
+            self.wizard.dodge = False
+            self.wizard.brain.set_state("seeking")
         return None
 
 def get_previous_node(graph, currentNode):
@@ -219,7 +198,8 @@ class WizardStateKO_TeamA(State):
         if self.wizard.current_respawn_time <= 0:
             self.wizard.current_respawn_time = self.wizard.respawn_time
             self.wizard.ko = False
-            self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
+            #self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
+            self.wizard.path_graph = self.wizard.world.paths[0]
             return "seeking"
             
         return None
@@ -232,3 +212,61 @@ class WizardStateKO_TeamA(State):
         self.wizard.target = None
 
         return None
+
+class WizardStateDodge_TeamA(State):
+    def __init__(self, wizard):
+        State.__init__(self, "dodge")
+        self.wizard = wizard
+
+    def do_actions(self):
+
+        self.wizard.velocity = self.wizard.move_target.position - self.wizard.position
+        if self.wizard.velocity.length() > 0:
+            self.wizard.velocity.normalize_ip();
+            self.wizard.velocity *= self.wizard.maxSpeed
+        
+        
+        
+
+    def entry_actions(self):
+        closeEdge = closer_edge(self.wizard)
+        print(closeEdge)
+
+        #direction of dodging changes according to which edge of screen is closer
+        print(self.wizard.dodge)
+        if closeEdge == "up":
+            if not self.wizard.dodge:
+                self.wizard.move_target.position = Vector2(self.wizard.position[0]-20, self.wizard.position[1]- 43)
+
+            else:
+                self.wizard.move_target.position = Vector2(self.wizard.position[0]-10, self.wizard.position[1]+ 43)
+    
+        elif closeEdge == "right":
+            if not self.wizard.dodge:
+                self.wizard.move_target.position = Vector2(self.wizard.position[0] + 35, self.wizard.position[1])
+            else:
+                self.wizard.move_target.position = Vector2(self.wizard.position[0] - 35, self.wizard.position[1])
+
+        self.wizard.dodge = not self.wizard.dodge
+
+    def check_conditions(self):
+        if (self.wizard.position - self.wizard.move_target.position).length() <= 14:
+            return "attacking"
+        
+        if (self.wizard.position[1] <= 5 or self.wizard.position[0] >= 1020 ):
+            return "seeking"
+
+
+        return None
+
+def closer_edge(wizard):
+    if wizard.position[1] < 170 and wizard.position[0] < 965:
+        return "up"
+    
+    if wizard.position [0] > 900 and wizard.position[1] > 55:
+        return "right"
+
+    if wizard.position[0] > 45 and wizard.position[1] > 640:
+        return "down"
+
+    return "left"
