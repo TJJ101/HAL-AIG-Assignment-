@@ -25,10 +25,14 @@ class Knight_BingChiling(Character):
         seeking_state = KnightStateSeeking_BingChiling(self)
         attacking_state = KnightStateAttacking_BingChiling(self)
         ko_state = KnightStateKO_BingChiling(self)
+        sticking_state = KnightStateStick_BingChiling(self)
+        defend_state = KnightStateDef_BingChiling(self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
         self.brain.add_state(ko_state)
+        self.brain.add_state(sticking_state)
+        self.brain.add_state(defend_state)
 
         self.brain.set_state("seeking")
         
@@ -44,7 +48,7 @@ class Knight_BingChiling(Character):
 
         level_up_stats = ["hp", "speed", "melee damage", "melee cooldown"]
         if self.can_level_up():
-            self.level_up("healing")
+            self.level_up("hp")
             
 
    
@@ -62,26 +66,15 @@ class KnightStateSeeking_BingChiling(State):
 
     def do_actions(self):
         #self.knight.position 
-        nearest_node = self.knight.path_graph.get_nearest_node(self.knight.position)
         #if self.knight.target is not None and self.knight.position[0] < 200 and self.knight.position[1] < 150:
         #gotta figure out how to not crash
         #stick to the wizard
-        if self.knight.target is not None:
-            if self.knight.target.name == "wizard":
-                if self.knight.position[0] > 969:
-                    self.knight.velocity = self.knight.target.position - self.knight.position + Vector2(0,45)
-                else:
-                    self.knight.velocity = self.knight.target.position - self.knight.position + Vector2(45,0)
-                if self.knight.velocity.length() > 0:
-                    self.knight.velocity.normalize_ip();
-                    self.knight.velocity *= self.knight.maxSpeed
-        else:
-            #Vector2(nearest_node.position)
-            #self.knight.velocity = self.knight.move_target.position - self.knight.position
-            self.knight.velocity = Vector2(nearest_node.position) - self.knight.position
-            if self.knight.velocity.length() > 0:
-                self.knight.velocity.normalize_ip();
-                self.knight.velocity *= self.knight.maxSpeed
+       
+        #Vector2(nearest_node.position)
+        self.knight.velocity = self.knight.move_target.position - self.knight.position
+        if self.knight.velocity.length() > 0:
+            self.knight.velocity.normalize_ip();
+            self.knight.velocity *= self.knight.maxSpeed
 
 
     def check_conditions(self):
@@ -99,10 +92,7 @@ class KnightStateSeeking_BingChiling(State):
             if opponent_distance <= self.knight.min_target_distance:
                 self.knight.target = nearest_opponent
                 return "attacking"
-            else:
-                test = self.knight.world.get_entity("wizard")
-                if test.team_id == self.knight.team_id:
-                    self.knight.target = test
+            
             #if nearest_opponent.name in ["archer", "wizard", "tower", "base", "orc"]:
                 #opponent_distance = (self.knight.position - nearest_opponent.position).length()
                 #if opponent_distance <= self.knight.min_target_distance:
@@ -172,7 +162,7 @@ class KnightStateAttacking_BingChiling(State):
         # target is gone
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
             self.knight.target = None
-            return "seeking"
+            return "sticking"
         if self.knight.current_hp <= 200:
             self.knight.heal()
             
@@ -182,6 +172,98 @@ class KnightStateAttacking_BingChiling(State):
 
         return None
 
+class KnightStateStick_BingChiling(State):
+
+    def __init__(self, knight):
+
+        State.__init__(self, "sticking")
+        self.knight = knight
+
+    def do_actions(self):
+        #if self.knight.target is not None and self.knight.position[0] < 200 and self.knight.position[1] < 150:
+        #gotta figure out how to not crash
+        #stick to the wizard
+        if self.knight.target is not None:
+            if self.knight.target.name == "wizard":
+                if self.knight.position[0] > 969:
+                    self.knight.velocity = self.knight.target.position - self.knight.position + Vector2(0,45)
+                else:
+                    self.knight.velocity = self.knight.target.position - self.knight.position + Vector2(45,0)
+                if self.knight.velocity.length() > 0:
+                    self.knight.velocity.normalize_ip();
+                    self.knight.velocity *= self.knight.maxSpeed
+
+
+    def check_conditions(self):
+        test = self.knight.world.get_entity("wizard")
+        if test.team_id == self.knight.team_id:
+            self.knight.target = test
+
+
+        nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
+       
+       #if self.knight.world.get_nearest_opponent(self.knight).name == "archer" or self.knight.world.get_nearest_opponent(self.knight).name == "wizard":
+           
+       
+        if nearest_opponent is not None:
+            
+            nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
+            opponent_distance = (self.knight.position - nearest_opponent.position).length()
+            if opponent_distance <= self.knight.min_target_distance:
+                self.knight.target = nearest_opponent
+                return "attacking"
+        
+        if self.knight.current_hp < 300:
+            self.knight.heal()
+
+
+    def entry_actions(self):
+
+        return None
+
+class KnightStateDef_BingChiling(State):
+
+    def __init__(self, knight):
+
+        State.__init__(self, "defend")
+        self.knight = knight
+
+    def do_actions(self):
+        #if self.knight.target is not None and self.knight.position[0] < 200 and self.knight.position[1] < 150:
+        #gotta figure out how to not crash
+        #stick to the wizard
+        if self.knight.move_target is not None:
+            self.knight.velocity = self.knight.move_target.position - self.knight.position
+            if self.knight.velocity.length() > 0:
+                self.knight.velocity.normalize_ip();
+                self.knight.velocity *= self.knight.maxSpeed
+
+
+
+    def check_conditions(self):
+
+        nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
+        print(self.knight.position)
+       
+       #if self.knight.world.get_nearest_opponent(self.knight).name == "archer" or self.knight.world.get_nearest_opponent(self.knight).name == "wizard":
+        if self.knight.position[0] >= 260:
+            self.knight.move_target.position = Vector2(158,216)
+       
+        if nearest_opponent is not None and self.knight.position[1] >= 216:
+            
+            nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
+            opponent_distance = (self.knight.position - nearest_opponent.position).length()
+            if opponent_distance <= self.knight.min_target_distance:
+                self.knight.target = nearest_opponent
+                return "attacking"
+            else:
+                return "seeking"
+
+        
+
+
+    def entry_actions(self):
+        self.knight.move_target.position = Vector2(260,111)
 
 class KnightStateKO_BingChiling(State):
 
@@ -201,8 +283,8 @@ class KnightStateKO_BingChiling(State):
         if self.knight.current_respawn_time <= 0:
             self.knight.current_respawn_time = self.knight.respawn_time
             self.knight.ko = False
-            self.knight.path_graph = self.knight.world.paths[randint(0, len(self.knight.world.paths)-1)]
-            return "seeking"
+            self.knight.path_graph = self.knight.world.paths[0]
+            return "defend"
             
         return None
 
