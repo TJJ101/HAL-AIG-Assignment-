@@ -14,6 +14,8 @@ class Wizard_TeamA(Character):
 
         self.projectile_image = projectile_image
         self.explosion_image = explosion_image
+        self.graph = Graph(self.world)
+        self.generate_pathfinding_graphs("wizard_pathfinding_graph.txt")
 
         self.base = base
         self.position = position
@@ -44,6 +46,8 @@ class Wizard_TeamA(Character):
     def render(self, surface):
 
         Character.render(self, surface)
+        if SHOW_PATHS:
+            self.graph.render(surface)
 
 
     def process(self, time_passed):
@@ -59,6 +63,53 @@ class Wizard_TeamA(Character):
             else: 
                 self.levelCount += 1 
 
+    def generate_pathfinding_graphs(self, filename):
+
+        f = open(filename, "r")
+
+        # Create the nodes
+        line = f.readline()
+        while line != "connections\n":
+            data = line.split()
+            self.graph.nodes[int(data[0])] = Node(self.graph, int(data[0]), int(data[1]), int(data[2]))
+            line = f.readline()
+
+        # Create the connections
+        line = f.readline()
+        while line != "paths\n":
+            data = line.split()
+            node0 = int(data[0])
+            node1 = int(data[1])
+            distance = (Vector2(self.graph.nodes[node0].position) - Vector2(self.graph.nodes[node1].position)).length()
+            self.graph.nodes[node0].addConnection(self.graph.nodes[node1], distance)
+            self.graph.nodes[node1].addConnection(self.graph.nodes[node0], distance)
+            line = f.readline()
+
+        # Create the orc paths, which are also Graphs
+        self.paths = []
+        line = f.readline()
+        while line != "":
+            path = Graph(self)
+            data = line.split()
+            
+            # Create the nodes
+            for i in range(0, len(data)):
+                node = self.graph.nodes[int(data[i])]
+                path.nodes[int(data[i])] = Node(path, int(data[i]), node.position[0], node.position[1])
+
+            # Create the connections
+            for i in range(0, len(data)-1):
+                node0 = int(data[i])
+                node1 = int(data[i + 1])
+                distance = (Vector2(self.graph.nodes[node0].position) - Vector2(self.graph.nodes[node1].position)).length()
+                path.nodes[node0].addConnection(path.nodes[node1], distance)
+                path.nodes[node1].addConnection(path.nodes[node0], distance)
+                
+            self.paths.append(path)
+
+            line = f.readline()
+
+        f.close()
 
 class WizardStateSeeking_TeamA(State):
 
@@ -68,7 +119,7 @@ class WizardStateSeeking_TeamA(State):
         self.wizard = wizard
 
         #self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
-        self.wizard.path_graph = self.wizard.world.paths[0]
+        self.wizard.path_graph = self.wizard.paths[0]
         
 
     def do_actions(self):
@@ -203,7 +254,7 @@ class WizardStateKO_TeamA(State):
             self.wizard.current_respawn_time = self.wizard.respawn_time
             self.wizard.ko = False
             #self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
-            self.wizard.path_graph = self.wizard.world.paths[0]
+            self.wizard.path_graph = self.wizard.paths[0]
             return "seeking"
             
         return None
@@ -225,6 +276,9 @@ class WizardStateDodge_TeamA(State):
         self.wizard = wizard
 
     def do_actions(self):
+
+        if (check_collision(self.wizard)):
+            self.wizard.brain.set_state("seeking")
 
         self.wizard.velocity = self.wizard.move_target.position - self.wizard.position
         if self.wizard.velocity.length() > 0:
@@ -275,4 +329,10 @@ def closer_edge(wizard):
         return "down"
 
     return "left"
+
+def check_collision(wizard):
+    for obs in wizard.world.obstacles:
+        if pygame.sprite.collide_rect(wizard, obs):
+            return True
+    return False
 
