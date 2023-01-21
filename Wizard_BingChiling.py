@@ -181,7 +181,7 @@ class WizardStateAttacking_TeamA(State):
     def do_actions(self):
 
         #heal if wizard <= 50%hp
-        if self.wizard.current_hp <= (50/100) * self.wizard.max_hp:
+        if self.wizard.current_hp <= (20/100) * self.wizard.max_hp:
             self.wizard.heal()
 
         opponent_distance = (self.wizard.position - self.wizard.target.position).length()
@@ -301,9 +301,15 @@ class WizardStateDodge_TeamA(State):
     
         elif closeEdge == "right":
             if not self.wizard.dodge:
-                self.wizard.move_target.position = Vector2(self.wizard.position[0] + 50, self.wizard.position[1])
+                if (self.wizard.target.name == "tower" or "base"):
+                    self.wizard.move_target.position = Vector2(self.wizard.position[0] + 60, self.wizard.position[1])
+                else:
+                    self.wizard.move_target.position = Vector2(self.wizard.position[0] + 50, self.wizard.position[1])
             else:
-                self.wizard.move_target.position = Vector2(self.wizard.position[0] - 50, self.wizard.position[1])
+                if (self.wizard.target.name == "tower" or "base"):
+                    self.wizard.move_target.position = Vector2(self.wizard.position[0] - 60, self.wizard.position[1])
+                else:
+                    self.wizard.move_target.position = Vector2(self.wizard.position[0] - 50, self.wizard.position[1])
 
         self.wizard.dodge = not self.wizard.dodge
 
