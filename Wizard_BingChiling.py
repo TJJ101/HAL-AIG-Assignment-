@@ -224,8 +224,6 @@ class WizardStateAttacking_TeamA(State):
             if self.wizard.velocity.length() > 0:
                 self.wizard.velocity.normalize_ip();
                 self.wizard.velocity *= self.wizard.maxSpeed
-
-        print(opponent_distance)
         if opponent_distance <= 90:
             self.wizard.tacticalRetreat = True
             self.wizard.brain.set_state("seeking")
@@ -235,11 +233,13 @@ class WizardStateAttacking_TeamA(State):
 
     def check_conditions(self):
 
-
         # target is gone
         if self.wizard.world.get(self.wizard.target.id) is None or self.wizard.target.ko:
             self.wizard.target = None
             self.wizard.dodge = False
+            return "seeking"
+
+        if check_collision(self.wizard):
             return "seeking"
 
         return None
@@ -251,12 +251,6 @@ class WizardStateAttacking_TeamA(State):
             self.wizard.brain.set_state("seeking")
         return None
 
-def get_previous_node(graph, currentNode):
-    for con in graph.connections:
-        if con.toNode == currentNode:
-            return con.fromNode
-    
-    return None
 
 class WizardStateKO_TeamA(State):
 
@@ -278,6 +272,7 @@ class WizardStateKO_TeamA(State):
             self.wizard.ko = False
             #self.wizard.path_graph = self.wizard.world.paths[randint(0, len(self.wizard.world.paths)-1)]
             self.wizard.path_graph = self.wizard.paths[0]
+            self.wizard.tacticalRetreat = False
             return "seeking"
             
         return None
@@ -291,8 +286,6 @@ class WizardStateKO_TeamA(State):
 
         return None
 
-
-#Need to add different dodging functionality when attacking base
 class WizardStateDodge_TeamA(State):
     def __init__(self, wizard):
         State.__init__(self, "dodge")
@@ -307,6 +300,9 @@ class WizardStateDodge_TeamA(State):
         if self.wizard.velocity.length() > 0:
             self.wizard.velocity.normalize_ip();
             self.wizard.velocity *= self.wizard.maxSpeed
+        
+        if self.wizard.current_ranged_cooldown <= 0:
+                self.wizard.ranged_attack(self.wizard.target.position, self.wizard.explosion_image)
         
         
         
@@ -344,6 +340,8 @@ class WizardStateDodge_TeamA(State):
         if (self.wizard.position[1] <= 5 or self.wizard.position[0] >= 1015 ):
             return "seeking"
 
+        if self.wizard.target is None:
+            return "seeking"
 
         return None
 
