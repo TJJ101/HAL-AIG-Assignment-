@@ -72,11 +72,15 @@ class WizardStateSeeking_TeamA(State):
         
 
     def do_actions(self):
+        #heal if hp <= 70%
+        if self.wizard.current_hp <= (70/100) * self.wizard.max_hp:
+            self.wizard.heal()
 
         self.wizard.velocity = self.wizard.move_target.position - self.wizard.position
         if self.wizard.velocity.length() > 0:
             self.wizard.velocity.normalize_ip();
             self.wizard.velocity *= self.wizard.maxSpeed
+        
 
     def check_conditions(self):
 
@@ -94,7 +98,7 @@ class WizardStateSeeking_TeamA(State):
             if self.current_connection < self.path_length:
                 self.wizard.move_target.position = self.path[self.current_connection].toNode.position
                 self.current_connection += 1
-            
+        
         return None
 
     def entry_actions(self):
@@ -125,8 +129,11 @@ class WizardStateAttacking_TeamA(State):
 
     def do_actions(self):
 
+        #heal if wizard <= 50%hp
+        if self.wizard.current_hp <= (50/100) * self.wizard.max_hp:
+            self.wizard.heal()
+
         opponent_distance = (self.wizard.position - self.wizard.target.position).length()
-        #nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
 
         # opponent within range
         if opponent_distance <= self.wizard.min_target_distance:
@@ -143,6 +150,7 @@ class WizardStateAttacking_TeamA(State):
 
     def check_conditions(self):
 
+
         # target is gone
         if self.wizard.world.get(self.wizard.target.id) is None or self.wizard.target.ko:
             self.wizard.target = None
@@ -155,12 +163,12 @@ class WizardStateAttacking_TeamA(State):
             if nearest_opponent == self.wizard.target:
                 pass
 
+
             else:
                 dist_self_target = (self.wizard.position - self.wizard.target.position).length()
                 dist_self_nearest_opponent = (self.wizard.position - nearest_opponent.position).length()
                 if dist_self_nearest_opponent < dist_self_target:
                     self.wizard.target = nearest_opponent
-                    print("opponent changed!")
 
         
 
@@ -213,6 +221,8 @@ class WizardStateKO_TeamA(State):
 
         return None
 
+
+#Need to add different dodging functionality when attacking base
 class WizardStateDodge_TeamA(State):
     def __init__(self, wizard):
         State.__init__(self, "dodge")
@@ -230,10 +240,8 @@ class WizardStateDodge_TeamA(State):
 
     def entry_actions(self):
         closeEdge = closer_edge(self.wizard)
-        print(closeEdge)
 
         #direction of dodging changes according to which edge of screen is closer
-        print(self.wizard.dodge)
         if closeEdge == "up":
             if not self.wizard.dodge:
                 self.wizard.move_target.position = Vector2(self.wizard.position[0]-20, self.wizard.position[1]- 43)
@@ -243,9 +251,9 @@ class WizardStateDodge_TeamA(State):
     
         elif closeEdge == "right":
             if not self.wizard.dodge:
-                self.wizard.move_target.position = Vector2(self.wizard.position[0] + 40, self.wizard.position[1])
+                self.wizard.move_target.position = Vector2(self.wizard.position[0] + 50, self.wizard.position[1])
             else:
-                self.wizard.move_target.position = Vector2(self.wizard.position[0] - 40, self.wizard.position[1])
+                self.wizard.move_target.position = Vector2(self.wizard.position[0] - 50, self.wizard.position[1])
 
         self.wizard.dodge = not self.wizard.dodge
 
