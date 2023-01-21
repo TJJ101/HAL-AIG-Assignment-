@@ -243,9 +243,9 @@ class WizardStateDodge_TeamA(State):
     
         elif closeEdge == "right":
             if not self.wizard.dodge:
-                self.wizard.move_target.position = Vector2(self.wizard.position[0] + 35, self.wizard.position[1])
+                self.wizard.move_target.position = Vector2(self.wizard.position[0] + 40, self.wizard.position[1])
             else:
-                self.wizard.move_target.position = Vector2(self.wizard.position[0] - 35, self.wizard.position[1])
+                self.wizard.move_target.position = Vector2(self.wizard.position[0] - 40, self.wizard.position[1])
 
         self.wizard.dodge = not self.wizard.dodge
 
@@ -253,7 +253,8 @@ class WizardStateDodge_TeamA(State):
         if (self.wizard.position - self.wizard.move_target.position).length() <= 14:
             return "attacking"
         
-        if (self.wizard.position[1] <= 5 or self.wizard.position[0] >= 1020 ):
+        #unstuck wizard when dodging
+        if (self.wizard.position[1] <= 5 or self.wizard.position[0] >= 1015 ):
             return "seeking"
 
 
@@ -270,3 +271,4 @@ def closer_edge(wizard):
         return "down"
 
     return "left"
+
