@@ -163,12 +163,8 @@ class WizardStateAttacking_TeamA(State):
             if nearest_opponent == self.wizard.target:
                 pass
 
-
             else:
-                dist_self_target = (self.wizard.position - self.wizard.target.position).length()
-                dist_self_nearest_opponent = (self.wizard.position - nearest_opponent.position).length()
-                if dist_self_nearest_opponent < dist_self_target:
-                    self.wizard.target = nearest_opponent
+                self.wizard.target = nearest_opponent
 
         
 
