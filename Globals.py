@@ -1,7 +1,7 @@
 DEBUG = True
 SHOW_PATHS = True
 SHOW_SPLASH = False
-SPEED_MULTIPLIER = 2
+SPEED_MULTIPLIER = 2.0
 
 RED_MULTIPLIER = 1.15       # Set this to 1.0 for Easy Mode
                             # Set this to 1.15 for Hard Mode
@@ -12,7 +12,7 @@ SCREEN_SIZE = (SCREEN_WIDTH, SCREEN_HEIGHT)
 
 TIME_LIMIT = 180 * 1 / SPEED_MULTIPLIER
 
-TEAM_NAME = ["TeamA", "TeamB"]
+TEAM_NAME = ["BingChiling", "TeamB"]
 
 RESPAWN_TIME = 5. * 1 / SPEED_MULTIPLIER
 HEALING_COOLDOWN = 2. * 1 / SPEED_MULTIPLIER
