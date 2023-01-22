@@ -13,7 +13,10 @@ class Archer_BingChiling(Character):
         Character.__init__(self, world, "archer", image)
 
         self.projectile_image = projectile_image
-
+        
+        self.graph = Graph(self.world)
+        self.generate_pathfinding_graphs("archer_pathfinding_graph.txt")
+    
         self.base = base
         self.position = position
         self.move_target = GameEntity(world, "archer_move_target", None)
@@ -27,6 +30,7 @@ class Archer_BingChiling(Character):
         self.projectile_speed = 100
 
         self.dodge = False
+        self.run = False
 
         seeking_state = ArcherStateSeeking_BingChiling(self)
         attacking_state = ArcherStateAttacking_BingChiling(self)
@@ -43,6 +47,8 @@ class Archer_BingChiling(Character):
     def render(self, surface):
 
         Character.render(self, surface)
+        if SHOW_PATHS:
+            self.graph.render(surface)
 
 
     def process(self, time_passed):
@@ -59,6 +65,55 @@ class Archer_BingChiling(Character):
                 self.statChoice += 1
 
 
+    def generate_pathfinding_graphs(self, filename):
+
+        f = open(filename, "r")
+
+        # Create the nodes
+        line = f.readline()
+        while line != "connections\n":
+            data = line.split()
+            self.graph.nodes[int(data[0])] = Node(self.graph, int(data[0]), int(data[1]), int(data[2]))
+            line = f.readline()
+
+        # Create the connections
+        line = f.readline()
+        while line != "paths\n":
+            data = line.split()
+            node0 = int(data[0])
+            node1 = int(data[1])
+            distance = (Vector2(self.graph.nodes[node0].position) - Vector2(self.graph.nodes[node1].position)).length()
+            self.graph.nodes[node0].addConnection(self.graph.nodes[node1], distance)
+            self.graph.nodes[node1].addConnection(self.graph.nodes[node0], distance)
+            line = f.readline()
+
+        # Create the orc paths, which are also Graphs
+        self.paths = []
+        line = f.readline()
+        while line != "":
+            path = Graph(self)
+            data = line.split()
+            
+            # Create the nodes
+            for i in range(0, len(data)):
+                node = self.graph.nodes[int(data[i])]
+                path.nodes[int(data[i])] = Node(path, int(data[i]), node.position[0], node.position[1])
+
+            # Create the connections
+            for i in range(0, len(data)-1):
+                node0 = int(data[i])
+                node1 = int(data[i + 1])
+                distance = (Vector2(self.graph.nodes[node0].position) - Vector2(self.graph.nodes[node1].position)).length()
+                path.nodes[node0].addConnection(path.nodes[node1], distance)
+                path.nodes[node1].addConnection(path.nodes[node0], distance)
+                
+            self.paths.append(path)
+
+            line = f.readline()
+
+        f.close()
+
+
 class ArcherStateSeeking_BingChiling(State):
 
     def __init__(self, archer):
@@ -67,11 +122,15 @@ class ArcherStateSeeking_BingChiling(State):
         self.archer = archer
 
         #self.archer.path_graph = self.archer.world.paths[randint(0, len(self.archer.world.paths)-1)]
-        self.archer.path_graph = self.archer.world.paths[0]
+        self.archer.path_graph = self.archer.paths[1]
 
 
 
     def do_actions(self):
+
+        # if archer current hp less than 75%, heal
+        if (self.archer.current_hp <= (self.archer.max_hp * (75/100))):
+            self.archer.heal()
 
         self.archer.velocity = self.archer.move_target.position - self.archer.position
         if self.archer.velocity.length() > 0:
@@ -83,11 +142,13 @@ class ArcherStateSeeking_BingChiling(State):
 
         # check if opponent is in range
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
-        if nearest_opponent is not None:
-            opponent_distance = (self.archer.position - nearest_opponent.position).length()
-            if opponent_distance <= self.archer.min_target_distance:
-                    self.archer.target = nearest_opponent
-                    return "attacking"
+
+        if not self.archer.run:
+            if nearest_opponent is not None:
+                opponent_distance = (self.archer.position - nearest_opponent.position).length()
+                if opponent_distance <= self.archer.min_target_distance:
+                        self.archer.target = nearest_opponent
+                        return "attacking"
         
         if (self.archer.position - self.archer.move_target.position).length() < 8:
 
@@ -95,16 +156,27 @@ class ArcherStateSeeking_BingChiling(State):
             if self.current_connection < self.path_length:
                 self.archer.move_target.position = self.path[self.current_connection].toNode.position
                 self.current_connection += 1
-            
+                
+                if (self.archer.run):
+                    if((self.archer.position - nearest_opponent.position).length() > 75):
+                        self.archer.run = False
+                        return "attacking"
         return None
 
     def entry_actions(self):
 
         nearest_node = self.archer.path_graph.get_nearest_node(self.archer.position)
 
-        self.path = pathFindAStar(self.archer.path_graph, \
-                                  nearest_node, \
-                                  self.archer.path_graph.nodes[self.archer.base.target_node_index])
+        if not self.archer.run:
+            self.path = pathFindAStar(self.archer.path_graph, \
+                                      nearest_node, \
+                                      self.archer.path_graph.nodes[self.archer.base.target_node_index])
+
+        else:
+            # run away to base
+            self.path = pathFindAStar(self.archer.path_graph, \
+                                      nearest_node, \
+                                      self.archer.path_graph.nodes[self.archer.base.spawn_node_index])
 
         
         self.path_length = len(self.path)
@@ -114,7 +186,12 @@ class ArcherStateSeeking_BingChiling(State):
             self.archer.move_target.position = self.path[0].fromNode.position
 
         else:
-            self.archer.move_target.position = self.archer.path_graph.nodes[self.archer.base.target_node_index].position
+            
+            if not self.archer.run:
+                self.archer.move_target.position = self.archer.path_graph.nodes[self.archer.base.target_node_index].position
+
+            else:
+                self.archer.move_target.position = self.archer.path_graph.nodes[self.archer.base.spawn_node_index].position
 
 
 class ArcherStateAttacking_BingChiling(State):
@@ -125,62 +202,61 @@ class ArcherStateAttacking_BingChiling(State):
         self.archer = archer
 
     def do_actions(self):
+        
+        if self.archer.current_hp <= (self.archer.max_hp/2):
+            self.archer.heal()
+            self.archer.run = True
+            self.archer.brain.set_state("seeking")
+
+        nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+        print("ARCHER'S CLOSEST TARGET IS " + str(nearest_opponent.name))
+        if nearest_opponent is not None:
+            if nearest_opponent == self.archer.target:
+                pass
+            # if the closest opponent is base, prioritise shooting base
+            if nearest_opponent.name == "base":
+                self.archer.target = nearest_opponent
+
+            else:
+                #else shoot tower
+                if nearest_opponent.name == "tower":
+                    self.archer.target = nearest_opponent
+                else:
+                    # else shoot lowest hp target
+                    if(nearest_opponent.current_hp < self.archer.target.current_hp):
+                        self.archer.target = nearest_opponent
+
 
         opponent_distance = (self.archer.position - self.archer.target.position).length()
-        opp_pos = self.archer.position - self.archer.target.position
-        opp_pos.normalize_ip()
-
-        nearest_opp_distance = (self.archer.position - self.archer.world.get_nearest_opponent(self.archer).position).length()
-        
-        kite = randint(1, 4);
         
         # opponent within range
         if opponent_distance <= self.archer.min_target_distance:
-            self.archer.velocity = Vector2(0,0)
-            #if self.archer.min_target_distance - nearest_opp_distance <= 8:
-            #    enemy_close = True
-            #else:
-                #enemy_close = False
-                #self.archer.velocity = Vector2(self.archer.target.position - self.archer.position).rotate(180)
-##            if randint(0, 1) == 0:
-##                self.archer.velocity = Vector2(-1, 0) * self.archer.maxSpeed
-            #else:
-                #check if enemy is below or above archer
-                #if opp_pos.y <= -0.2 and opp_pos.y >= 0.2:
-                    # move left & right
-                    #self.archer.velocity = Vector2(randint(-1, 1), 0) * self.archer.maxSpeed
-                #else:
-                    #self.archer.velocity = Vector2(0, randint(-1, 1)) * self.archer.maxSpeed
-            #if enemy_close == True:
-            #    self.archer.velocity = Vector2(self.archer.target.position - self.archer.position).rotate(180)
-            #else:
-            #    if kite == 1:
-            #        self.archer.velocity = Vector2(1, 0) * self.archer.maxSpeed
-            #    if kite == 2:
-            #        self.archer.velocity = Vector2(-1, 0) * self.archer.maxSpeed
-            #    if kite == 3:
-            #        self.archer.velocity = Vector2(0, 1) * self.archer.maxSpeed
-            #    if kite == 4:
-            #        self.archer.velocity = Vector2(0, -1) * self.archer.maxSpeed
-                
+            self.archer.velocity = Vector2(0,0)  
             if self.archer.current_ranged_cooldown <= 0:
                 self.archer.ranged_attack(self.archer.target.position)
             self.archer.brain.set_state("dodge")
-##                if randint(0, 1) == 1:
-##                        self.archer.velocity = self.archer.position - Vector2(nearest_node.position)
-                
+            
         else:
             self.archer.velocity = self.archer.target.position - self.archer.position
             if self.archer.velocity.length() > 0:
                 self.archer.velocity.normalize_ip();
                 self.archer.velocity *= self.archer.maxSpeed
 
+        #move back if enemy is too close
+        if opponent_distance <= (self.archer.min_target_distance * (35/100)):
+            self.archer.run = True
+            self.archer.brain.set_state("seeking")
+
 
     def check_conditions(self):
 
         # target is gone
-        if self.archer.world.get(self.archer.target.id) is None or self.archer.target.ko:
+        if (self.archer.target is None) or (self.archer.world.get(self.archer.target.id) is None) or (self.archer.target.ko):
             self.archer.target = None
+            return "seeking"
+
+        # if archer collides with object, unstuck it
+        if (check_collision(self.archer)):
             return "seeking"
 
         return None
@@ -201,27 +277,54 @@ class ArcherStateDodge_BingChiling(State):
 
     def do_actions(self):
 
+        if(check_collision(self.archer)):
+            self.archer.brain.set_state("seeking")
+
         self.archer.velocity = self.archer.move_target.position - self.archer.position
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip();
             self.archer.velocity *= self.archer.maxSpeed
 
+        # if possible, attack while dodging
+        if self.archer.current_ranged_cooldown <= 0:
+            self.archer.ranged_attack(self.archer.target.position);
+
     def entry_actions(self):
-
+        edge = check_edge(self.archer)
+        
         #check up
-        if (self.archer.position[1] < 170) and (self.archer.position[0] < 965):
+        if (edge == "up"):
             if not self.archer.dodge:
-                self.archer.move_target.position = Vector2(self.archer.position[0] - 20, self.archer.position[1] - 43)
+                if (self.archer.team_id == 0):
+                    self.archer.move_target.position = Vector2(self.archer.position[0] - 20, self.archer.position[1] - 43)
+                else:
+                    self.archer.move_target.position = Vector2(self.archer.position[0] + 20, self.archer.position[1] - 43)
 
             else:
-                self.archer.move_target.position = Vector2(self.archer.position[0] - 10, self.archer.position[1] + 43)
-                
-        #check up
-        elif (self.archer.position[0] > 900) and (self.archer.position[1] > 55):
+                if (self.archer.team_id == 0):
+                    self.archer.move_target.position = Vector2(self.archer.position[0] - 10, self.archer.position[1] + 43)
+                else:
+                    self.archer.move_target.position = Vector2(self.archer.position[0] + 10, self.archer.position[1] + 43)
+
+        elif (edge == "down"):
             if not self.archer.dodge:
-                self.archer.move_target.position = Vector2(self.archer.position[0] + 35, self.archer.position[1])
+                if (self.archer.team_id == 0):
+                    self.archer.move_target.position = Vector2(self.archer.position[0] - 10, self.archer.position[1] - 35)
+                else:
+                    self.archer.move_target.position = Vector2(self.archer.position[0] + 20, self.archer.position[1] - 35)
+
             else:
-                self.archer.move_target.position = Vector2(self.archer.position[0] - 35, self.archer.position[1])
+                if (self.archer.team_id == 0):
+                    self.archer.move_target.position = Vector2(self.archer.position[0] - 5, self.archer.position[1] + 35)
+                else:
+                    self.archer.move_target.position = Vector2(self.archer.position[0] + 5, self.archer.position[1] + 35)
+
+        #check up
+        elif (edge == "right" or "left"):
+            if not self.archer.dodge:
+                self.archer.move_target.position = Vector2(self.archer.position[0] + 60, self.archer.position[1])
+            else:
+                self.archer.move_target.position = Vector2(self.archer.position[0] - 60, self.archer.position[1])
 
         self.archer.dodge = not self.archer.dodge
 
@@ -230,6 +333,10 @@ class ArcherStateDodge_BingChiling(State):
             return "attacking"
 
         if(self.archer.position[1] <= 5) or (self.archer.position[0] >= 1020):
+            return "seeking"
+
+        # returns back to path if no current target
+        if self.archer.target is None:
             return "seeking"
 
         return None
@@ -252,7 +359,8 @@ class ArcherStateKO_BingChiling(State):
         if self.archer.current_respawn_time <= 0:
             self.archer.current_respawn_time = self.archer.respawn_time
             self.archer.ko = False
-            self.archer.path_graph = self.archer.world.paths[randint(0, len(self.archer.world.paths)-1)]
+            #self.archer.path_graph = self.archer.world.paths[randint(0, len(self.archer.world.paths)-1)]
+            self.archer.path_graph = self.archer.paths[2]
             return "seeking"
             
         return None
@@ -265,3 +373,23 @@ class ArcherStateKO_BingChiling(State):
         self.archer.target = None
 
         return None
+
+def check_edge(archer):
+    
+    if archer.position[1] < 170 and archer.position[0] < 965:
+        return "up"
+    
+    if archer.position [0] > 900 and archer.position[1] > 55:
+        return "right"
+
+    if archer.position[0] > 45 and archer.position[1] > 640:
+        return "down"
+
+    return "left"
+
+# check for collisions
+def check_collision(archer):
+    for obs in archer.world.obstacles:
+        if pygame.sprite.collide_rect(archer, obs):
+            return True
+    return False
