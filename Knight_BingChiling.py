@@ -21,6 +21,7 @@ class Knight_BingChiling(Character):
         self.min_target_distance = 100
         self.melee_damage = 20
         self.melee_cooldown = 2.
+        self.levelCount = 0
 
         seeking_state = KnightStateSeeking_BingChiling(self)
         attacking_state = KnightStateAttacking_BingChiling(self)
@@ -48,7 +49,11 @@ class Knight_BingChiling(Character):
 
         level_up_stats = ["hp", "speed", "melee damage", "melee cooldown"]
         if self.can_level_up():
-            self.level_up("hp")
+            if self.levelCount <=2:
+                self.level_up("hp")
+            else:
+                self.level_up("healing")
+            self.levelCount += 1
             
 
    
@@ -78,7 +83,7 @@ class KnightStateSeeking_BingChiling(State):
 
 
     def check_conditions(self):
-        if self.knight.current_hp < 350:
+        if self.knight.current_hp <= (0.8 * self.knight.max_hp):
             self.knight.heal()
         
         # check if opponent is in range
@@ -161,12 +166,13 @@ class KnightStateAttacking_BingChiling(State):
 
 
     def check_conditions(self):
-
+        if self.knight.current_hp <= (0.8 * self.knight.max_hp):
+            self.knight.heal()
         # target is gone
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
             self.knight.target = None
             return "sticking"
-        self.knight.heal()
+        
             
         return None
 
@@ -216,10 +222,10 @@ class KnightStateStick_BingChiling(State):
                 self.knight.target = nearest_opponent
                 return "attacking"
         
-        if self.knight.current_hp < 300:
+        if self.knight.current_hp <= (0.8 * self.knight.max_hp):
             self.knight.heal()
 
-        if (self.knight.position[0] - self.knight.target.position[0]) >=200:
+        if (self.knight.position[0] - self.knight.target.position[0]) >=100:
             return "seeking"
 
     def entry_actions(self):
@@ -248,7 +254,6 @@ class KnightStateDef_BingChiling(State):
     def check_conditions(self):
 
         nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
-        print(self.knight.position)
        
        #if self.knight.world.get_nearest_opponent(self.knight).name == "archer" or self.knight.world.get_nearest_opponent(self.knight).name == "wizard":
         if self.knight.position[0] >= 260:
