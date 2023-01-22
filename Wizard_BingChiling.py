@@ -124,7 +124,7 @@ class WizardStateSeeking_TeamA(State):
         
 
     def do_actions(self):
-        #heal if hp <= 70%
+        #Heal if hp <= 70%
         if self.wizard.current_hp <= (70/100) * self.wizard.max_hp:
             self.wizard.heal()
 
@@ -313,10 +313,16 @@ class WizardStateDodge_TeamA(State):
         #direction of dodging changes according to which edge of screen is closer
         if closeEdge == "up":
             if not self.wizard.dodge:
-                self.wizard.move_target.position = Vector2(self.wizard.position[0]-20, self.wizard.position[1]- 43)
+                if (self.wizard.team_id == 0):
+                    self.wizard.move_target.position = Vector2(self.wizard.position[0]-20, self.wizard.position[1]- 43)
+                else:
+                    self.wizard.move_target.position = Vector2(self.wizard.position[0]+20, self.wizard.position[1]- 43)
 
             else:
-                self.wizard.move_target.position = Vector2(self.wizard.position[0]-10, self.wizard.position[1]+ 43)
+                if (self.wizard.team_id == 0):
+                    self.wizard.move_target.position = Vector2(self.wizard.position[0]-10, self.wizard.position[1]+ 43)
+                else:
+                    self.wizard.move_target.position = Vector2(self.wizard.position[0]+10, self.wizard.position[1]+ 43)
     
         elif closeEdge == "right":
             if not self.wizard.dodge:
