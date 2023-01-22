@@ -15,6 +15,8 @@ class Wizard_TeamA(Character):
         self.projectile_image = projectile_image
         self.explosion_image = explosion_image
         self.graph = Graph(self.world)
+
+        #custom path graph
         self.generate_pathfinding_graphs("wizard_pathfinding_graph.txt")
 
         self.base = base
@@ -137,6 +139,7 @@ class WizardStateSeeking_TeamA(State):
     def check_conditions(self):
         nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
         # check if opponent is in range
+        # check if wizard is not tactical retreating
         if not self.wizard.tacticalRetreat:
             if nearest_opponent is not None:
                 opponent_distance = (self.wizard.position - nearest_opponent.position).length()
@@ -164,6 +167,7 @@ class WizardStateSeeking_TeamA(State):
 
         nearest_node = self.wizard.path_graph.get_nearest_node(self.wizard.position)
 
+        #if wizard is tactical retreating, set path to go towards base otherwise go towards enemy
         if not self.wizard.tacticalRetreat:
             self.path = pathFindAStar(self.wizard.path_graph, \
                                     nearest_node, \
@@ -196,7 +200,7 @@ class WizardStateAttacking_TeamA(State):
 
     def do_actions(self):
 
-        #heal if wizard <= 50%hp
+        #heal if wizard <= 50%hp and tactical retreats
         if self.wizard.current_hp <= (20/100) * self.wizard.max_hp:
             self.wizard.heal()
             self.wizard.tacticalRetreat = True
@@ -224,6 +228,8 @@ class WizardStateAttacking_TeamA(State):
             if self.wizard.velocity.length() > 0:
                 self.wizard.velocity.normalize_ip();
                 self.wizard.velocity *= self.wizard.maxSpeed
+        
+        #tactical retreats when enemy near wizard
         if opponent_distance <= 90:
             self.wizard.tacticalRetreat = True
             self.wizard.brain.set_state("seeking")
@@ -239,6 +245,7 @@ class WizardStateAttacking_TeamA(State):
             self.wizard.dodge = False
             return "seeking"
 
+        #unstuck the wizard
         if check_collision(self.wizard):
             return "seeking"
 
@@ -293,6 +300,7 @@ class WizardStateDodge_TeamA(State):
 
     def do_actions(self):
 
+        #unstuck wizard
         if (check_collision(self.wizard)):
             self.wizard.brain.set_state("seeking")
 
@@ -301,6 +309,7 @@ class WizardStateDodge_TeamA(State):
             self.wizard.velocity.normalize_ip();
             self.wizard.velocity *= self.wizard.maxSpeed
         
+        #attempts to shoot when dodging
         if self.wizard.current_ranged_cooldown <= 0:
                 self.wizard.ranged_attack(self.wizard.target.position, self.wizard.explosion_image)
         
@@ -336,9 +345,11 @@ class WizardStateDodge_TeamA(State):
                 else:
                     self.wizard.move_target.position = Vector2(self.wizard.position[0] - 50, self.wizard.position[1])
 
+        #For checking of which direction to dodge
         self.wizard.dodge = not self.wizard.dodge
 
     def check_conditions(self):
+        #reached dodge move position
         if (self.wizard.position - self.wizard.move_target.position).length() <= 14:
             return "attacking"
         
