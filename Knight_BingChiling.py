@@ -47,12 +47,11 @@ class Knight_BingChiling(Character):
         
         Character.process(self, time_passed)
 
-        level_up_stats = ["hp", "speed", "melee damage", "melee cooldown"]
         if self.can_level_up():
             if self.levelCount <=2:
-                self.level_up("hp")
-            else:
                 self.level_up("healing")
+            else:
+                self.level_up("hp")
             self.levelCount += 1
             
 
@@ -70,12 +69,6 @@ class KnightStateSeeking_BingChiling(State):
 
 
     def do_actions(self):
-        #self.knight.position 
-        #if self.knight.target is not None and self.knight.position[0] < 200 and self.knight.position[1] < 150:
-        #gotta figure out how to not crash
-        #stick to the wizard
-       
-        #Vector2(nearest_node.position)
         self.knight.velocity = self.knight.move_target.position - self.knight.position
         if self.knight.velocity.length() > 0:
             self.knight.velocity.normalize_ip();
@@ -89,9 +82,6 @@ class KnightStateSeeking_BingChiling(State):
         # check if opponent is in range
         nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
        
-       #if self.knight.world.get_nearest_opponent(self.knight).name == "archer" or self.knight.world.get_nearest_opponent(self.knight).name == "wizard":
-           
-       
         if nearest_opponent is not None:
             
             nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
@@ -100,13 +90,6 @@ class KnightStateSeeking_BingChiling(State):
                 self.knight.target = nearest_opponent
                 
                 return "attacking"
-            
-            #if nearest_opponent.name in ["archer", "wizard", "tower", "base", "orc"]:
-                #opponent_distance = (self.knight.position - nearest_opponent.position).length()
-                #if opponent_distance <= self.knight.min_target_distance:
-                    
-                    #self.knight.target = nearest_opponent
-                    #return "attacking"
             
   
 
@@ -188,12 +171,9 @@ class KnightStateStick_BingChiling(State):
         self.knight = knight
 
     def do_actions(self):
-        #if self.knight.target is not None and self.knight.position[0] < 200 and self.knight.position[1] < 150:
-        #gotta figure out how to not crash
         #stick to the wizard
         if self.knight.target is not None:
             if self.knight.target.name == "wizard":
-                print(self.knight.position[0] - self.knight.target.position[0])
                 if self.knight.position[0] > 969:
                     self.knight.velocity = self.knight.target.position - self.knight.position + Vector2(0,45)
                 else:
@@ -204,15 +184,13 @@ class KnightStateStick_BingChiling(State):
 
 
     def check_conditions(self):
-        test = self.knight.world.get_entity("wizard")
-        if test.team_id == self.knight.team_id:
-            self.knight.target = test
+        #set wizard as target
+        wizard_target = self.knight.world.get_entity("wizard")
+        if wizard_target.team_id == self.knight.team_id:
+            self.knight.target = wizard_target
 
 
         nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
-       
-       #if self.knight.world.get_nearest_opponent(self.knight).name == "archer" or self.knight.world.get_nearest_opponent(self.knight).name == "wizard":
-           
        
         if nearest_opponent is not None:
             
@@ -222,9 +200,11 @@ class KnightStateStick_BingChiling(State):
                 self.knight.target = nearest_opponent
                 return "attacking"
         
+        #if hp below 80% then heal
         if self.knight.current_hp <= (0.8 * self.knight.max_hp):
             self.knight.heal()
 
+        #incase the knight gets stuck 
         if (self.knight.position[0] - self.knight.target.position[0]) >=100:
             return "seeking"
 
@@ -240,9 +220,7 @@ class KnightStateDef_BingChiling(State):
         self.knight = knight
 
     def do_actions(self):
-        #if self.knight.target is not None and self.knight.position[0] < 200 and self.knight.position[1] < 150:
-        #gotta figure out how to not crash
-        #stick to the wizard
+
         if self.knight.move_target is not None:
             self.knight.velocity = self.knight.move_target.position - self.knight.position
             if self.knight.velocity.length() > 0:
@@ -254,12 +232,12 @@ class KnightStateDef_BingChiling(State):
     def check_conditions(self):
 
         nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
-       
-       #if self.knight.world.get_nearest_opponent(self.knight).name == "archer" or self.knight.world.get_nearest_opponent(self.knight).name == "wizard":
+       #changet he target to be bottom left of screen afterknight has reached the first location
         if self.knight.position[0] >= 260:
             self.knight.move_target.position = Vector2(158,216)
        
-        if nearest_opponent is not None and self.knight.position[1] >= 216:
+        #if nearest_opponent is not None and self.knight.position[1] >= 216:
+        if nearest_opponent is not None:
             
             nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
             opponent_distance = (self.knight.position - nearest_opponent.position).length()
@@ -273,6 +251,7 @@ class KnightStateDef_BingChiling(State):
 
 
     def entry_actions(self):
+        #target to be the top right of base
         self.knight.move_target.position = Vector2(260,111)
 
 class KnightStateKO_BingChiling(State):
