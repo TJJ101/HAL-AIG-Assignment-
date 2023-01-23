@@ -193,7 +193,7 @@ class KnightStateStick_BingChiling(State):
         #stick to the wizard
         if self.knight.target is not None:
             if self.knight.target.name == "wizard":
-                print(self.knight.position[0] - self.knight.target.position[0])
+                #print(self.knight.position[0] - self.knight.target.position[0])
                 if self.knight.position[0] > 969:
                     self.knight.velocity = self.knight.target.position - self.knight.position + Vector2(0,45)
                 else:
