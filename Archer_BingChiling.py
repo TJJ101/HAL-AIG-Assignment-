@@ -394,6 +394,11 @@ class ArcherStateDefend_BingChiling(State):
 
         print("Current State of Archer: defend")
 
+        if(self.archer.target is None):
+            nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+            if (self.archer.position - nearest_opponent).length() > 80:
+                self.archer.brain.set_state("seeking")
+
         opponent_distance = (self.archer.position - self.archer.target.position).length()
 
         # opponent within range
