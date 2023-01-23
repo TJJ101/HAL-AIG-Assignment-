@@ -125,7 +125,7 @@ class ArcherStateSeeking_BingChiling(State):
         self.archer = archer
 
         #self.archer.path_graph = self.archer.world.paths[randint(0, len(self.archer.world.paths)-1)]
-        self.archer.path_graph = self.archer.paths[1]
+        self.archer.path_graph = self.archer.paths[0]
 
 
 
@@ -336,9 +336,9 @@ class ArcherStateDodge_BingChiling(State):
         #check up
         elif (edge == "right" or "left"):
             if not self.archer.dodge:
-                self.archer.move_target.position = Vector2(self.archer.position[0] + 60, self.archer.position[1]+ 20)
+                self.archer.move_target.position = Vector2(self.archer.position[0] + 35, self.archer.position[1] + 15)
             else:
-                self.archer.move_target.position = Vector2(self.archer.position[0] - 60, self.archer.position[1] - 20)
+                self.archer.move_target.position = Vector2(self.archer.position[0] - 35, self.archer.position[1] - 15)
 
         self.archer.dodge = not self.archer.dodge
 
