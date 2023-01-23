@@ -131,8 +131,17 @@ class ArcherStateSeeking_BingChiling(State):
 
     def do_actions(self):
 
-        if self.archer.current_hp <= (self.archer.max_hp * (25/100)):
+        if (self.archer.target is None or (self.archer.target.position - self.archer.position).length() >= 300) and (self.archer.current_hp <= (self.archer.max_hp * (75/100))) and (self.archer.run is not False):
+        #if self.archer.current_hp <= (self.archer.max_hp * (25/100)):
             self.archer.heal()
+
+        if(self.archer.run):
+            if(self.archer.current_hp <= (self.archer.max_hp *(25/100))):
+                self.archer.heal()
+                
+            if(self.archer.target.position - self.archer.position).length() >= 150:
+                self.archer.run = False
+                self.archer.brain.set_state("attacking")
 
         self.archer.velocity = self.archer.move_target.position - self.archer.position
         if self.archer.velocity.length() > 0:
@@ -212,7 +221,6 @@ class ArcherStateAttacking_BingChiling(State):
     def do_actions(self):
 
         if self.archer.current_hp <= (self.archer.max_hp * (25/100)):
-            self.archer.heal()
             self.archer.run = True
             self.archer.brain.set_state("seeking")
 
@@ -316,63 +324,41 @@ class ArcherStateDodge_BingChiling(State):
         
         if (self.archer.defend):
             if not self.archer.dodge:
-                self.archer.move_target.position = Vector2(self.archer.position[0] + 10, self.archer.position[1] + 5)
+                self.archer.move_target.position = Vector2(self.archer.position[0] + randint(1, 5), self.archer.position[1] + randint(1, 5))
             else:
-                self.archer.move_target.position = Vector2(self.archer.position[0] - 5, self.archer.position[1] - 10)
+                self.archer.move_target.position = Vector2(self.archer.position[0] - randint(1, 5), self.archer.position[1] - randint(1, 5))
 
         # when edge of screen is to the top of the archer
         if (edge == "up"):
             if not self.archer.dodge:
-                if (self.archer.team_id == 0):
-                    self.archer.move_target.position = Vector2(self.archer.position[0] - 35, self.archer.position[1] - 45)
-                else:
-                    self.archer.move_target.position = Vector2(self.archer.position[0] + 20, self.archer.position[1] - 43)
+                self.archer.move_target.position = Vector2(self.archer.position[0] - 35, self.archer.position[1] - 45)
 
             else:
-                if (self.archer.team_id == 0):
-                    self.archer.move_target.position = Vector2(self.archer.position[0] - 15, self.archer.position[1] + 43)
-                else:
-                    self.archer.move_target.position = Vector2(self.archer.position[0] + 10, self.archer.position[1] + 43)
+                self.archer.move_target.position = Vector2(self.archer.position[0] - 15, self.archer.position[1] + 43)
 
         # When edge of screen is to the bottom of the archer
         elif (edge == "down"):
             if not self.archer.dodge:
-                if (self.archer.team_id == 0):
-                    self.archer.move_target.position = Vector2(self.archer.position[0] - 43, self.archer.position[1] - 35)
-                else:
-                    self.archer.move_target.position = Vector2(self.archer.position[0] + 43, self.archer.position[1] - 35)
+                self.archer.move_target.position = Vector2(self.archer.position[0] - 43, self.archer.position[1] - 35)
 
             else:
-                if (self.archer.team_id == 0):
-                    self.archer.move_target.position = Vector2(self.archer.position[0] - 5, self.archer.position[1] + 35)
-                else:
-                    self.archer.move_target.position = Vector2(self.archer.position[0] + 5, self.archer.position[1] + 35)
+                self.archer.move_target.position = Vector2(self.archer.position[0] - 5, self.archer.position[1] + 35)
 
         # When edge of screen is to the left of the archer
         elif (edge == "left"):
             if not self.archer.dodge:
-                if(self.archer.team_id == 0):
-                    self.archer.move_target.position = Vector2(self.archer.position[0] + 25, self.archer.position[1] + 15)
-                else:
-                    self.archer.move_target.position = Vector2(self.archer.position[0] - 35, self.archer.position[1] + 15)
+                self.archer.move_target.position = Vector2(self.archer.position[0] + 25, self.archer.position[1] + 15)
             else:
-                if(self.archer.team_id == 0):
-                    self.archer.move_target.position = Vector2(self.archer.position[0] - 35, self.archer.position[1] - 15)
-                else:
-                    self.archer.move_target.position = Vector2(self.archer.position[0] + 45, self.archer.position[1] - 15)
+                self.archer.move_target.position = Vector2(self.archer.position[0] - 35, self.archer.position[1] - 15)
 
         # When edge of the screen is to the right of the Archer
         elif (edge == "right"):
             if not self.archer.dodge:
-                if(self.archer.team_id == 0):
-                    self.archer.move_target.position = Vector2(self.archer.position[0] + 40, self.archer.position[1] - 30)
-                else:
-                    self.archer.move_target.position = Vector2(self.archer.position[0] + 40, self.archer.position[1] + 15)
+                #self.archer.move_target.position = Vector2(self.archer.position[0] + 40, self.archer.position[1] - 15)
+                self.archer.move_target.position = Vector2(self.archer.position[0] + randint(30, 40), self.archer.position[1] - randint(5, 15))
             else:
-                if(self.archer.team_id == 0): 
-                    self.archer.move_target.position = Vector2(self.archer.position[0] - 25, self.archer.position[1] + 20)
-                else:
-                    self.archer.move_target.position = Vector2(self.archer.position[0] - 20, self.archer.position[1] - 20)
+                #self.archer.move_target.position = Vector2(self.archer.position[0] - 25, self.archer.position[1] + 10)
+                self.archer.move_target.position = Vector2(self.archer.position[0] - randint(30, 40), self.archer.position[1] + randint(5, 15))
 
         self.archer.dodge = not self.archer.dodge
 
@@ -404,23 +390,23 @@ class ArcherStateDefend_BingChiling(State):
 
     def do_actions(self):
 
-        print("Current State of Archer: defend")
-
         if(self.archer.target is None):
             nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
-            if (self.archer.position - nearest_opponent).length() > 80:
+            if (self.archer.position - nearest_opponent.position).length() > 80:
                 self.archer.brain.set_state("seeking")
             else:
                 self.archer.target = nearest_opponent
 
-        opponent_distance = (self.archer.position - self.archer.target.position).length()
+        else:
 
-        # opponent within range
-        self.archer.brain.set_state("dodge")
-        if opponent_distance <= self.archer.min_target_distance:
-            #self.archer.velocity = Vector2(0,0)  
-            if self.archer.current_ranged_cooldown <= 0:
-                self.archer.ranged_attack(self.archer.target.position)
+            opponent_distance = (self.archer.position - self.archer.target.position).length()
+
+            # opponent within range
+            self.archer.brain.set_state("dodge")
+            if opponent_distance <= self.archer.min_target_distance:
+                #self.archer.velocity = Vector2(0,0)  
+                if self.archer.current_ranged_cooldown <= 0:
+                    self.archer.ranged_attack(self.archer.target.position)
 
     def check_conditions(self):
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
@@ -491,6 +477,9 @@ class ArcherStateKO_BingChiling(State):
 
 def check_edge(archer):
 
+    if (archer.position [0] > 900) and (archer.position[1] > 55):
+        return "right"
+
     if (archer.position[0] > 10) and (archer.position[1] < 640):
         return "left"
     
@@ -499,9 +488,6 @@ def check_edge(archer):
     
     if (archer.position[1] < 170) and (archer.position[0] < 965):
         return "up"
-    
-    if (archer.position [0] > 900) and (archer.position[1] > 55):
-        return "right"
 
 
 # check for collisions
