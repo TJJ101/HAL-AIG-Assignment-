@@ -131,18 +131,19 @@ class ArcherStateSeeking_BingChiling(State):
 
     def do_actions(self):
 
-        if (self.archer.target is None or (self.archer.target.position - self.archer.position).length() >= 300) and (self.archer.current_hp <= (self.archer.max_hp * (75/100))) and (self.archer.run is not False):
-        #if self.archer.current_hp <= (self.archer.max_hp * (25/100)):
-            self.archer.heal()
-
         if(self.archer.run):
             if(self.archer.current_hp <= (self.archer.max_hp *(25/100))):
                 self.archer.heal()
                 
-            if(self.archer.target.position - self.archer.position).length() >= 150:
+            if (self.archer.target is not None) and (self.archer.target.position - self.archer.position).length() >= 150:
                 self.archer.run = False
                 self.archer.brain.set_state("attacking")
 
+        else:
+            if (self.archer.target is None or (self.archer.target.position - self.archer.position).length() >= 300):
+                if (self.archer.current_hp <= (self.archer.max_hp * (50/100))):
+                    self.archer.heal()
+            
         self.archer.velocity = self.archer.move_target.position - self.archer.position
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip();
@@ -232,10 +233,16 @@ class ArcherStateAttacking_BingChiling(State):
         
         else:
             if (enemy_base is not None):
+                
+                # if enemy base is close to Archer, set target to base
                 if((self.archer.position - enemy_base.position).length()) <= 200:
                     self.archer.target = enemy_base
+
+                # else if the closest target is a tower, set target to tower
                 elif (nearest_opponent.name == "tower"):
                     self.archer.target = nearest_opponent
+
+                # else set target to the lowest hp target
                 elif (nearest_opponent.current_hp <= self.archer.target.current_hp):
                     self.archer.target = nearest_opponent
             
@@ -292,6 +299,7 @@ class ArcherStateAttacking_BingChiling(State):
 
     def entry_actions(self):
 
+        # if Archer has no target, returns seeking
         if self.archer.target is None or self.archer.world.get(self.archer.target.id) is None or self.archer.target.ko:
             self.archer.target = None;
             self.archer.dodge = False;
@@ -321,7 +329,7 @@ class ArcherStateDodge_BingChiling(State):
     def entry_actions(self):
         edge = check_edge(self.archer)
         
-        
+        # if archer is defending/at base, dodge movement is smaller
         if (self.archer.defend):
             if not self.archer.dodge:
                 self.archer.move_target.position = Vector2(self.archer.position[0] + randint(1, 5), self.archer.position[1] + randint(1, 5))
@@ -363,14 +371,17 @@ class ArcherStateDodge_BingChiling(State):
         self.archer.dodge = not self.archer.dodge
 
     def check_conditions(self):
-        
+
+        # if archer is near base and has enemy near, return Defend state
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
         if (self.archer.position - self.archer.base.position).length() <= 150 and (nearest_opponent.position - self.archer.position).length() <= 80:
             return "defend"
-            
+
+        # if enemy is close to archer when dodge finishes, return Attacking state
         if(self.archer.position - self.archer.move_target.position).length() <= 14:
             return "attacking"
 
+        # if archer is going out of bounds, go back to Seeking state
         if(self.archer.position[1] <= 5) or (self.archer.position[0] >= 1020) or (self.archer.position[0] <= 5) or  (self.archer.position[1] >= 800):
             return "seeking"
 
@@ -497,6 +508,7 @@ def check_collision(archer):
             return True
     return False
 
+# retrieve the enemy base entity
 def get_enemy_base(archer):
     for i in archer.world.entities:
         if archer.world.entities[i].name == "base" and archer.world.entities[i].team_id == 1:
