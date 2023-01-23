@@ -30,8 +30,12 @@ class Wizard_TeamA(Character):
         self.projectile_range = 100
         self.projectile_speed = 100
 
+        #check if wizard had attempt to dodge
         self.dodge = False
+        #check if wizard is running away 
         self.tacticalRetreat = False
+        #check if wizard is has already reached the base when running away
+        self.retreatToBase = False
 
         seeking_state = WizardStateSeeking_TeamA(self)
         attacking_state = WizardStateAttacking_TeamA(self)
@@ -154,10 +158,22 @@ class WizardStateSeeking_TeamA(State):
                 self.wizard.move_target.position = self.path[self.current_connection].toNode.position
                 self.current_connection += 1
                 
+
                 if self.wizard.tacticalRetreat:
+                    if self.current_connection == self.path_length:
+                        self.wizard.retreatToBase == True
+                        return "attacking"
+
                     if (self.wizard.position - nearest_opponent.position).length() > 90:
                         self.wizard.tacticalRetreat = False
                         return "attacking"
+        
+        #change path to towards enemy base after enemy dies
+        if self.wizard.tacticalRetreat:
+            if self.wizard.target is None or self.wizard.world.get(self.wizard.target.id) is None or self.wizard.target.ko:
+                self.wizard.tacticalRetreat = False
+                self.wizard.retreatToBase = False
+                return "seeking"
 
                 
         
@@ -204,7 +220,8 @@ class WizardStateAttacking_TeamA(State):
         if self.wizard.current_hp <= (20/100) * self.wizard.max_hp:
             self.wizard.heal()
             self.wizard.tacticalRetreat = True
-            self.wizard.brain.set_state("seeking")
+            if not self.wizard.retreatToBase:
+                self.wizard.brain.set_state("seeking")
         
         #changes target if there is one closer
         nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
@@ -231,6 +248,9 @@ class WizardStateAttacking_TeamA(State):
         
         #tactical retreats when enemy near wizard
         if opponent_distance <= 90:
+            #do not do anything if already at base
+            if self.wizard.retreatToBase:
+                pass
             self.wizard.tacticalRetreat = True
             self.wizard.brain.set_state("seeking")
 
@@ -243,6 +263,7 @@ class WizardStateAttacking_TeamA(State):
         if self.wizard.world.get(self.wizard.target.id) is None or self.wizard.target.ko:
             self.wizard.target = None
             self.wizard.dodge = False
+            self.wizard.retreatToBase = False
             return "seeking"
 
         #unstuck the wizard
@@ -255,6 +276,7 @@ class WizardStateAttacking_TeamA(State):
         if self.wizard.world.get(self.wizard.target.id) is None or self.wizard.target.ko:
             self.wizard.target = None
             self.wizard.dodge = False
+            self.wizard.retreatToBase = False
             self.wizard.brain.set_state("seeking")
         return None
 
