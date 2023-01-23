@@ -217,23 +217,35 @@ class ArcherStateAttacking_BingChiling(State):
             self.archer.brain.set_state("seeking")
 
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
-        if nearest_opponent is not None:
+        enemy_base = get_enemy_base(self.archer)
+
+        if (self.archer.target is not None) and (self.archer.target.name == "base"):
+            pass
+        
+        else:
+            if (enemy_base is not None):
+                if((self.archer.position - enemy_base.position).length()) <= 200:
+                    self.archer.target = enemy_base
+                elif (nearest_opponent.name == "tower"):
+                    self.archer.target = nearest_opponent
+                elif (nearest_opponent.current_hp <= self.archer.target.current_hp):
+                    self.archer.target = nearest_opponent
+            
+        
+        #if nearest_opponent is not None:
             #if nearest_opponent == self.archer.target:
             #    pass
             # if the closest opponent is base, prioritise shooting base
-            if nearest_opponent.name == "base":
-                if nearest_opponent == self.archer.target:
-                    pass
-                self.archer.target = nearest_opponent
+            #    self.archer.target = nearest_opponent
 
-            else:
+            #else:
                 #else shoot tower
-                if nearest_opponent.name == "tower":
-                    self.archer.target = nearest_opponent
-                else:
+                #if nearest_opponent.name == "tower":
+                    #self.archer.target = nearest_opponent
+               # else:
                     # else shoot lowest hp target
-                    if(nearest_opponent.current_hp < self.archer.target.current_hp):
-                        self.archer.target = nearest_opponent
+                    #if(nearest_opponent.current_hp < self.archer.target.current_hp):
+                        #self.archer.target = nearest_opponent
 
 
         opponent_distance = (self.archer.position - self.archer.target.position).length()
@@ -275,7 +287,7 @@ class ArcherStateAttacking_BingChiling(State):
         if self.archer.target is None or self.archer.world.get(self.archer.target.id) is None or self.archer.target.ko:
             self.archer.target = None;
             self.archer.dodge = False;
-            self.archer.brain.set_state("seeking")
+            self.archer.brain.set_state("seeking")                
 
         return None
 
@@ -304,9 +316,9 @@ class ArcherStateDodge_BingChiling(State):
         
         if (self.archer.defend):
             if not self.archer.dodge:
-                self.archer.move_target.position = Vector2(self.archer.position[0] + 5, self.archer.position[1] + 5)
+                self.archer.move_target.position = Vector2(self.archer.position[0] + 10, self.archer.position[1] + 5)
             else:
-                self.archer.move_target.position = Vector2(self.archer.position[0] - 5, self.archer.position[1] - 5)
+                self.archer.move_target.position = Vector2(self.archer.position[0] - 5, self.archer.position[1] - 10)
 
         # when edge of screen is to the top of the archer
         if (edge == "up"):
@@ -406,7 +418,7 @@ class ArcherStateDefend_BingChiling(State):
         # opponent within range
         self.archer.brain.set_state("dodge")
         if opponent_distance <= self.archer.min_target_distance:
-            self.archer.velocity = Vector2(0,0)  
+            #self.archer.velocity = Vector2(0,0)  
             if self.archer.current_ranged_cooldown <= 0:
                 self.archer.ranged_attack(self.archer.target.position)
 
@@ -498,3 +510,10 @@ def check_collision(archer):
         if pygame.sprite.collide_rect(archer, obs):
             return True
     return False
+
+def get_enemy_base(archer):
+    for i in archer.world.entities:
+        if archer.world.entities[i].name == "base" and archer.world.entities[i].team_id == 1:
+            return archer.world.entities[i]
+
+    return None
