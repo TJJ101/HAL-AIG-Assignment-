@@ -53,9 +53,6 @@ class Wizard_TeamA(Character):
     def render(self, surface):
 
         Character.render(self, surface)
-        if SHOW_PATHS:
-            self.graph.render(surface)
-
 
     def process(self, time_passed):
         
