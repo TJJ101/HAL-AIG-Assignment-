@@ -57,8 +57,8 @@ class Archer_BingChiling(Character):
     def process(self, time_passed):
         
         Character.process(self, time_passed)
-        
-        #level_up_stats = ["hp", "speed", "ranged damage", "ranged cooldown", "projectile range"]
+
+        # level up these stats in order
         level_up_stats = ["ranged cooldown", "ranged damage", "ranged damage", "ranged cooldown", "ranged damage"]
         if self.can_level_up():
             self.level_up(level_up_stats[self.statChoice])
@@ -132,14 +132,17 @@ class ArcherStateSeeking_BingChiling(State):
     def do_actions(self):
 
         if(self.archer.run):
+            # if hp <= 25%, heal while retreating
             if(self.archer.current_hp <= (self.archer.max_hp *(25/100))):
                 self.archer.heal()
-                
+
+            # if Archer has target and target is far, return to attacking state
             if (self.archer.target is not None) and (self.archer.target.position - self.archer.position).length() >= 150:
                 self.archer.run = False
                 self.archer.brain.set_state("attacking")
 
         else:
+            # if Archer has no target or if target is really far, heal hp if hp <= 50%
             if (self.archer.target is None or (self.archer.target.position - self.archer.position).length() >= 300):
                 if (self.archer.current_hp <= (self.archer.max_hp * (50/100))):
                     self.archer.heal()
@@ -221,6 +224,7 @@ class ArcherStateAttacking_BingChiling(State):
 
     def do_actions(self):
 
+        # if health lower than 25%, retreat back
         if self.archer.current_hp <= (self.archer.max_hp * (25/100)):
             self.archer.run = True
             self.archer.brain.set_state("seeking")
@@ -228,6 +232,7 @@ class ArcherStateAttacking_BingChiling(State):
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
         enemy_base = get_enemy_base(self.archer)
 
+        # if target is already enemy base, ignore
         if (self.archer.target is not None) and (self.archer.target.name == "base"):
             pass
         
@@ -245,22 +250,6 @@ class ArcherStateAttacking_BingChiling(State):
                 # else set target to the lowest hp target
                 elif (nearest_opponent.current_hp <= self.archer.target.current_hp):
                     self.archer.target = nearest_opponent
-            
-        
-        #if nearest_opponent is not None:
-            #if nearest_opponent == self.archer.target:
-            #    pass
-            # if the closest opponent is base, prioritise shooting base
-            #    self.archer.target = nearest_opponent
-
-            #else:
-                #else shoot tower
-                #if nearest_opponent.name == "tower":
-                    #self.archer.target = nearest_opponent
-               # else:
-                    # else shoot lowest hp target
-                    #if(nearest_opponent.current_hp < self.archer.target.current_hp):
-                        #self.archer.target = nearest_opponent
 
 
         opponent_distance = (self.archer.position - self.archer.target.position).length()
@@ -287,7 +276,7 @@ class ArcherStateAttacking_BingChiling(State):
     def check_conditions(self):
 
         # target is gone
-        if (self.archer.target is None) or (self.archer.world.get(self.archer.target.id) is None) or (self.archer.target.ko):
+        if (self.archer.target is None) or (self.archer.target.ko):
             self.archer.target = None
             return "seeking"
 
@@ -314,6 +303,7 @@ class ArcherStateDodge_BingChiling(State):
 
     def do_actions(self):
 
+        # if Archer collides with obj, return seeking to return back to path
         if(check_collision(self.archer)):
             self.archer.brain.set_state("seeking")
 
@@ -332,11 +322,9 @@ class ArcherStateDodge_BingChiling(State):
         # when attacking base, dodge more right than left, to avoid running into spawning enemies and towers
         if (self.archer.target.name == "base"):
             if not self.archer.dodge:
-                #self.archer.move_target.position = Vector2(self.archer.position[0] + 40, self.archer.position[1] - 15)
-                self.archer.move_target.position = Vector2(self.archer.position[0] + 45, self.archer.position[1] - randint(5, 15))
+                self.archer.move_target.position = Vector2(self.archer.position[0] + randint(5, 15), self.archer.position[1] - randint(10, 15))
             else:
-                #self.archer.move_target.position = Vector2(self.archer.position[0] - 25, self.archer.position[1] + 10)
-                self.archer.move_target.position = Vector2(self.archer.position[0] - 30, self.archer.position[1] + randint(5, 15))
+                self.archer.move_target.position = Vector2(self.archer.position[0] - randint(5, 15), self.archer.position[1] + randint(5, 10))
         
         # if archer is defending/at base, dodge movement is smaller
         if (self.archer.defend):
@@ -348,10 +336,10 @@ class ArcherStateDodge_BingChiling(State):
         # when edge of screen is to the top of the archer
         if (edge == "up"):
             if not self.archer.dodge:
-                self.archer.move_target.position = Vector2(self.archer.position[0] - 35, self.archer.position[1] - 45)
+                self.archer.move_target.position = Vector2(self.archer.position[0] + randint(25, 30), self.archer.position[1] - randint(40, 45))
 
             else:
-                self.archer.move_target.position = Vector2(self.archer.position[0] - 15, self.archer.position[1] + 43)
+                self.archer.move_target.position = Vector2(self.archer.position[0] - randint(15, 20), self.archer.position[1] + randint(40, 43))
 
         # When edge of screen is to the bottom of the archer
         elif (edge == "down"):
@@ -371,11 +359,9 @@ class ArcherStateDodge_BingChiling(State):
         # When edge of the screen is to the right of the Archer
         elif (edge == "right"):
             if not self.archer.dodge:
-                #self.archer.move_target.position = Vector2(self.archer.position[0] + 40, self.archer.position[1] - 15)
-                self.archer.move_target.position = Vector2(self.archer.position[0] + randint(30, 40), self.archer.position[1] - randint(5, 15))
+                self.archer.move_target.position = Vector2(self.archer.position[0] + randint(35, 40), self.archer.position[1] - randint(20, 25))
             else:
-                #self.archer.move_target.position = Vector2(self.archer.position[0] - 25, self.archer.position[1] + 10)
-                self.archer.move_target.position = Vector2(self.archer.position[0] - randint(30, 40), self.archer.position[1] + randint(5, 15))
+                self.archer.move_target.position = Vector2(self.archer.position[0] - randint(30, 35), self.archer.position[1] + randint(15, 20))
 
         self.archer.dodge = not self.archer.dodge
 
@@ -412,19 +398,21 @@ class ArcherStateDefend_BingChiling(State):
 
         if(self.archer.target is None):
             nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+            
+            # if nearest enemy is far, go back to seeking
             if (self.archer.position - nearest_opponent.position).length() > 80:
                 self.archer.brain.set_state("seeking")
+                
             else:
+                # sets target to nearest opponent
                 self.archer.target = nearest_opponent
 
         else:
-
             opponent_distance = (self.archer.position - self.archer.target.position).length()
 
-            # opponent within range
+            # opponent within range so dodge
             self.archer.brain.set_state("dodge")
             if opponent_distance <= self.archer.min_target_distance:
-                #self.archer.velocity = Vector2(0,0)  
                 if self.archer.current_ranged_cooldown <= 0:
                     self.archer.ranged_attack(self.archer.target.position)
 
@@ -437,7 +425,8 @@ class ArcherStateDefend_BingChiling(State):
             self.archer.run = False
             self.archer.defend = False
             return "seeking"
-
+        
+        # target is too far
         if ((nearest_opponent - self.archer.position).length() >= 80):
             self.archer.run = False
             self.archer.defend = False
@@ -464,7 +453,6 @@ class ArcherStateKO_BingChiling(State):
     def do_actions(self):
 
         return None
-
 
     def check_conditions(self):
 
@@ -497,15 +485,19 @@ class ArcherStateKO_BingChiling(State):
 
 def check_edge(archer):
 
+    # the edge is on the right of Archer
     if (archer.position [0] > 900) and (archer.position[1] > 55):
         return "right"
-
+    
+    # the edge is on the left of Archer
     if (archer.position[0] > 10) and (archer.position[1] < 640):
         return "left"
-    
+
+    # the edge is on the down of Archer
     if (archer.position[0] > 45) and (archer.position[1] > 640):
         return "down"
-    
+
+    # the edge is on the up of Archer
     if (archer.position[1] < 170) and (archer.position[0] < 965):
         return "up"
 
