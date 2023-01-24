@@ -328,6 +328,15 @@ class ArcherStateDodge_BingChiling(State):
 
     def entry_actions(self):
         edge = check_edge(self.archer)
+
+        # when attacking base, dodge more right than left, to avoid running into spawning enemies and towers
+        if (self.archer.target.name == "base"):
+            if not self.archer.dodge:
+                #self.archer.move_target.position = Vector2(self.archer.position[0] + 40, self.archer.position[1] - 15)
+                self.archer.move_target.position = Vector2(self.archer.position[0] + 45, self.archer.position[1] - randint(5, 15))
+            else:
+                #self.archer.move_target.position = Vector2(self.archer.position[0] - 25, self.archer.position[1] + 10)
+                self.archer.move_target.position = Vector2(self.archer.position[0] - 30, self.archer.position[1] + randint(5, 15))
         
         # if archer is defending/at base, dodge movement is smaller
         if (self.archer.defend):
@@ -382,7 +391,7 @@ class ArcherStateDodge_BingChiling(State):
             return "attacking"
 
         # if archer is going out of bounds, go back to Seeking state
-        if(self.archer.position[1] <= 5) or (self.archer.position[0] >= 1020) or (self.archer.position[0] <= 5) or  (self.archer.position[1] >= 800):
+        if(self.archer.position[1] <= 7) or (self.archer.position[0] >= 1020) or (self.archer.position[0] <= 5) or  (self.archer.position[1] >= 800):
             return "seeking"
 
         # returns back to path if no current target
