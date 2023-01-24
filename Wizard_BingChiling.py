@@ -53,9 +53,6 @@ class Wizard_TeamA(Character):
     def render(self, surface):
 
         Character.render(self, surface)
-        if SHOW_PATHS:
-            self.graph.render(surface)
-
 
     def process(self, time_passed):
         
@@ -213,6 +210,7 @@ class WizardStateAttacking_TeamA(State):
 
         State.__init__(self, "attacking")
         self.wizard = wizard
+        self.find_enemy_base_spawn_point()
 
     def do_actions(self):
 
@@ -238,7 +236,10 @@ class WizardStateAttacking_TeamA(State):
         if opponent_distance <= self.wizard.min_target_distance:
             self.wizard.velocity = Vector2(0, 0)
             if self.wizard.current_ranged_cooldown <= 0:
-                self.wizard.ranged_attack(self.wizard.target.position, self.wizard.explosion_image)
+                if self.wizard.target.name == "base":
+                    self.wizard.ranged_attack(self.enemyBaseSpawn, self.wizard.explosion_image)
+                else:
+                    self.wizard.ranged_attack(self.wizard.target.position, self.wizard.explosion_image)
             self.wizard.brain.set_state("dodge")
         else:
             self.wizard.velocity = self.wizard.target.position - self.wizard.position
@@ -280,6 +281,10 @@ class WizardStateAttacking_TeamA(State):
             self.wizard.brain.set_state("seeking")
         return None
 
+    def find_enemy_base_spawn_point(self):
+        for ent in self.wizard.world.entities.values():
+            if ent.name == "base" and ent.team_id != self.wizard.team_id:
+                self.enemyBaseSpawn = ent.spawn_position
 
 class WizardStateKO_TeamA(State):
 
