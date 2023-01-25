@@ -240,8 +240,8 @@ class KnightStateDef_BingChiling(State):
         if self.knight.position[0] >= 260:
             self.knight.move_target.position = Vector2(158,216)
        
-        #if nearest_opponent is not None and self.knight.position[1] >= 216:
-        if nearest_opponent is not None:
+        #if neares
+        if nearest_opponent is not None or self.knight.position[1] >= 216:
             
             nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
             opponent_distance = (self.knight.position - nearest_opponent.position).length()
