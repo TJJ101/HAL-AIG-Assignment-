@@ -35,7 +35,7 @@ class Knight_BingChiling(Character):
         self.brain.add_state(sticking_state)
         self.brain.add_state(defend_state)
 
-        self.brain.set_state("seeking")
+        self.brain.set_state("defend")
         
 
     def render(self, surface):
@@ -240,8 +240,8 @@ class KnightStateDef_BingChiling(State):
         if self.knight.position[0] >= 260:
             self.knight.move_target.position = Vector2(158,216)
        
-        #if nearest_opponent is not None and self.knight.position[1] >= 216:
-        if nearest_opponent is not None:
+        #check if got nearest opponent and knight has reached the second position/node
+        if nearest_opponent is not None and self.knight.position[1] >= 216:
             
             nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
             opponent_distance = (self.knight.position - nearest_opponent.position).length()
