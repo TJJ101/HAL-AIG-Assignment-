@@ -208,9 +208,10 @@ class KnightStateStick_BingChiling(State):
         if self.knight.current_hp <= (0.8 * self.knight.max_hp):
             self.knight.heal()
 
-        #incase the knight gets stuck    
-        if self.knight.position.distance_to(self.knight.target.position) >=200:
-            return "seeking"
+        #incase the knight gets stuck   
+        if self.knight.target is not None:
+            if self.knight.position.distance_to(self.knight.target.position) >=200:
+                return "seeking"
 
     def entry_actions(self):
 
