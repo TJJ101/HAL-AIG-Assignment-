@@ -512,7 +512,7 @@ def check_collision(archer):
 # retrieve the enemy base entity
 def get_enemy_base(archer):
     for i in archer.world.entities:
-        if archer.world.entities[i].name == "base" and archer.world.entities[i].team_id == 1:
+        if archer.world.entities[i].name == "base" and archer.world.entities[i].team_id != archer.team_id:
             return archer.world.entities[i]
 
     return None
